@@ -1,9 +1,9 @@
 'use client'
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
-import { Trash2, AlertCircle } from 'lucide-react'
+import { Trash2, AlertCircle, ChevronUp, ChevronDown, ChevronsUpDown } from 'lucide-react'
 
 interface InventoryRow {
   sku_id: string
@@ -11,7 +11,23 @@ interface InventoryRow {
   quantity_on_hand: number
   quantity_reserved: number
   quantity_available: number
-  skus?: { sku_code: string; description: string; unit: string; storage_unit?: number | null }
+  skus?: {
+    sku_code: string
+    description: string
+    unit: string
+    storage_unit?: number | null
+    quantity?: number | null
+  }
+}
+
+type SortKey = 'sku_code' | 'description' | 'quantity' | 'reserved' | 'available' | 'storage_unit'
+type SortDir = 'asc' | 'desc'
+
+function SortIcon({ col, sortKey, sortDir }: { col: SortKey; sortKey: SortKey; sortDir: SortDir }) {
+  if (col !== sortKey) return <ChevronsUpDown size={12} className="text-gray-300 ml-1 inline" />
+  return sortDir === 'asc'
+    ? <ChevronUp size={12} className="text-blue-500 ml-1 inline" />
+    : <ChevronDown size={12} className="text-blue-500 ml-1 inline" />
 }
 
 export default function InventoryTable({ rows }: { rows: InventoryRow[] }) {
@@ -20,6 +36,34 @@ export default function InventoryTable({ rows }: { rows: InventoryRow[] }) {
   const [selected, setSelected] = useState<Set<string>>(new Set())
   const [deleting, setDeleting] = useState(false)
   const [error, setError] = useState('')
+  const [sortKey, setSortKey] = useState<SortKey>('sku_code')
+  const [sortDir, setSortDir] = useState<SortDir>('asc')
+
+  function handleSort(key: SortKey) {
+    if (sortKey === key) {
+      setSortDir(d => d === 'asc' ? 'desc' : 'asc')
+    } else {
+      setSortKey(key)
+      setSortDir('asc')
+    }
+  }
+
+  const sorted = useMemo(() => {
+    return [...rows].sort((a, b) => {
+      let av: any, bv: any
+      switch (sortKey) {
+        case 'sku_code':    av = a.skus?.sku_code ?? ''; bv = b.skus?.sku_code ?? ''; break
+        case 'description': av = a.skus?.description ?? ''; bv = b.skus?.description ?? ''; break
+        case 'quantity':    av = a.skus?.quantity ?? 0; bv = b.skus?.quantity ?? 0; break
+        case 'reserved':    av = a.quantity_reserved; bv = b.quantity_reserved; break
+        case 'available':   av = a.quantity_available; bv = b.quantity_available; break
+        case 'storage_unit':av = a.skus?.storage_unit ?? -1; bv = b.skus?.storage_unit ?? -1; break
+      }
+      if (av < bv) return sortDir === 'asc' ? -1 : 1
+      if (av > bv) return sortDir === 'asc' ? 1 : -1
+      return 0
+    })
+  }, [rows, sortKey, sortDir])
 
   const allChecked = rows.length > 0 && selected.size === rows.length
   const someChecked = selected.size > 0 && selected.size < rows.length
@@ -58,9 +102,19 @@ export default function InventoryTable({ rows }: { rows: InventoryRow[] }) {
     await deleteSkus(Array.from(selected))
   }
 
+  function Th({ col, label, right }: { col: SortKey; label: string; right?: boolean }) {
+    return (
+      <th
+        className={`px-5 py-3 text-xs font-medium text-gray-500 cursor-pointer select-none hover:text-gray-800 ${right ? 'text-right' : 'text-left'}`}
+        onClick={() => handleSort(col)}
+      >
+        {label}<SortIcon col={col} sortKey={sortKey} sortDir={sortDir} />
+      </th>
+    )
+  }
+
   return (
     <div>
-      {/* Bulk action bar */}
       {selected.size > 0 && (
         <div className="px-5 py-2.5 bg-blue-50 border-b border-blue-100 flex items-center justify-between">
           <span className="text-sm text-blue-700 font-medium">{selected.size} selected</span>
@@ -93,21 +147,21 @@ export default function InventoryTable({ rows }: { rows: InventoryRow[] }) {
                   className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                 />
               </th>
-              <th className="px-5 py-3 text-left text-xs font-medium text-gray-500">SKU</th>
-              <th className="px-5 py-3 text-left text-xs font-medium text-gray-500">Description</th>
-              <th className="px-5 py-3 text-right text-xs font-medium text-gray-500">On hand</th>
-              <th className="px-5 py-3 text-right text-xs font-medium text-gray-500">Reserved</th>
-              <th className="px-5 py-3 text-right text-xs font-medium text-gray-500">Available</th>
-              <th className="px-5 py-3 text-right text-xs font-medium text-gray-500">Storage unit</th>
+              <Th col="sku_code" label="SKU" />
+              <Th col="description" label="Description" />
+              <Th col="quantity" label="On hand" right />
+              <Th col="reserved" label="Reserved" right />
+              <Th col="available" label="Available" right />
+              <Th col="storage_unit" label="Storage unit" right />
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-50">
-            {rows.length === 0 && (
+            {sorted.length === 0 && (
               <tr>
                 <td colSpan={7} className="px-5 py-8 text-center text-gray-400 text-xs">No inventory yet</td>
               </tr>
             )}
-            {rows.map(row => (
+            {sorted.map(row => (
               <tr key={row.sku_id} className={`hover:bg-gray-50 ${selected.has(row.sku_id) ? 'bg-blue-50' : ''}`}>
                 <td className="px-4 py-3">
                   <input
@@ -123,7 +177,9 @@ export default function InventoryTable({ rows }: { rows: InventoryRow[] }) {
                   </Link>
                 </td>
                 <td className="px-5 py-3 text-gray-700">{row.skus?.description}</td>
-                <td className="px-5 py-3 text-right text-gray-700">{row.quantity_on_hand}</td>
+                <td className="px-5 py-3 text-right text-gray-700">
+                  {row.skus?.quantity ?? 0}
+                </td>
                 <td className="px-5 py-3 text-right text-amber-600">{row.quantity_reserved}</td>
                 <td className={`px-5 py-3 text-right font-medium ${row.quantity_available <= 0 ? 'text-red-600' : 'text-green-700'}`}>
                   {row.quantity_available}
