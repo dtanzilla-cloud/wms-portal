@@ -3,7 +3,7 @@ import { useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
-import { Pencil, Trash2, AlertCircle } from 'lucide-react'
+import { Trash2, AlertCircle } from 'lucide-react'
 
 interface InventoryRow {
   sku_id: string
@@ -11,7 +11,7 @@ interface InventoryRow {
   quantity_on_hand: number
   quantity_reserved: number
   quantity_available: number
-  skus?: { sku_code: string; description: string; unit: string }
+  skus?: { sku_code: string; description: string; unit: string; storage_unit?: number | null }
 }
 
 export default function InventoryTable({ rows }: { rows: InventoryRow[] }) {
@@ -25,11 +25,7 @@ export default function InventoryTable({ rows }: { rows: InventoryRow[] }) {
   const someChecked = selected.size > 0 && selected.size < rows.length
 
   function toggleAll() {
-    if (allChecked) {
-      setSelected(new Set())
-    } else {
-      setSelected(new Set(rows.map(r => r.sku_id)))
-    }
+    setSelected(allChecked ? new Set() : new Set(rows.map(r => r.sku_id)))
   }
 
   function toggleOne(id: string) {
@@ -44,19 +40,10 @@ export default function InventoryTable({ rows }: { rows: InventoryRow[] }) {
     setDeleting(true)
     setError('')
     try {
-      // Delete movements first (no cascade on FK)
-      const { error: mvErr } = await supabase
-        .from('inventory_movements')
-        .delete()
-        .in('sku_id', ids)
+      const { error: mvErr } = await supabase.from('inventory_movements').delete().in('sku_id', ids)
       if (mvErr) throw mvErr
-
-      const { error: skuErr } = await supabase
-        .from('skus')
-        .delete()
-        .in('id', ids)
+      const { error: skuErr } = await supabase.from('skus').delete().in('id', ids)
       if (skuErr) throw skuErr
-
       setSelected(new Set())
       router.refresh()
     } catch (e: any) {
@@ -64,11 +51,6 @@ export default function InventoryTable({ rows }: { rows: InventoryRow[] }) {
     } finally {
       setDeleting(false)
     }
-  }
-
-  async function handleDeleteOne(id: string) {
-    if (!confirm('Delete this SKU and all its inventory history? This cannot be undone.')) return
-    await deleteSkus([id])
   }
 
   async function handleDeleteSelected() {
@@ -116,7 +98,7 @@ export default function InventoryTable({ rows }: { rows: InventoryRow[] }) {
               <th className="px-5 py-3 text-right text-xs font-medium text-gray-500">On hand</th>
               <th className="px-5 py-3 text-right text-xs font-medium text-gray-500">Reserved</th>
               <th className="px-5 py-3 text-right text-xs font-medium text-gray-500">Available</th>
-              <th className="px-5 py-3 w-16"></th>
+              <th className="px-5 py-3 text-right text-xs font-medium text-gray-500">Storage unit</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-50">
@@ -146,20 +128,8 @@ export default function InventoryTable({ rows }: { rows: InventoryRow[] }) {
                 <td className={`px-5 py-3 text-right font-medium ${row.quantity_available <= 0 ? 'text-red-600' : 'text-green-700'}`}>
                   {row.quantity_available}
                 </td>
-                <td className="px-4 py-3">
-                  <div className="flex items-center gap-2 justify-end">
-                    <Link href={`/inventory/skus/${row.sku_id}`} className="text-gray-400 hover:text-blue-600" title="Edit">
-                      <Pencil size={13} />
-                    </Link>
-                    <button
-                      onClick={() => handleDeleteOne(row.sku_id)}
-                      disabled={deleting}
-                      className="text-gray-400 hover:text-red-600 disabled:opacity-40"
-                      title="Delete"
-                    >
-                      <Trash2 size={13} />
-                    </button>
-                  </div>
+                <td className="px-5 py-3 text-right text-gray-500">
+                  {row.skus?.storage_unit ?? '—'}
                 </td>
               </tr>
             ))}
