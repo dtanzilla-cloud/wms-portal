@@ -9,20 +9,28 @@ export default function NewSKUPage() {
   const router = useRouter()
   const supabase = createClient()
   const [profile, setProfile] = useState<any>(null)
+  const [customers, setCustomers] = useState<any[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
 
+  const [selectedCustomerId, setSelectedCustomerId] = useState('')
   const [skuCode, setSkuCode] = useState('')
   const [description, setDescription] = useState('')
   const [unit, setUnit] = useState('each')
   const [weightKg, setWeightKg] = useState('')
   const [dimensionsCm, setDimensionsCm] = useState('')
 
+  const isStaff = profile?.role === 'warehouse_staff' || profile?.role === 'admin'
+
   useEffect(() => {
     async function load() {
       const { data: { user } } = await supabase.auth.getUser()
       const { data: prof } = await supabase.from('profiles').select('*').eq('id', user!.id).single()
       setProfile(prof)
+      if (prof?.role === 'warehouse_staff' || prof?.role === 'admin') {
+        const { data: custs } = await supabase.from('customers').select('id, name').order('name')
+        setCustomers(custs ?? [])
+      }
     }
     load()
   }, [])
@@ -32,8 +40,10 @@ export default function NewSKUPage() {
     setLoading(true)
     setError('')
     try {
+      const customerId = isStaff ? selectedCustomerId : profile?.customer_id
+      if (!customerId) throw new Error('Please select a customer')
       const { error: err } = await supabase.from('skus').insert({
-        customer_id: profile?.customer_id,
+        customer_id: customerId,
         sku_code: skuCode.toUpperCase(),
         description,
         unit,
@@ -59,6 +69,18 @@ export default function NewSKUPage() {
       </div>
 
       <form onSubmit={handleSubmit} className="card p-5 space-y-4">
+        {isStaff && (
+          <div>
+            <label className="block text-xs font-medium text-gray-600 mb-1">Customer <span className="text-red-500">*</span></label>
+            <select
+              required value={selectedCustomerId} onChange={e => setSelectedCustomerId(e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              <option value="">Select customer…</option>
+              {customers.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+            </select>
+          </div>
+        )}
         <div>
           <label className="block text-xs font-medium text-gray-600 mb-1">SKU code <span className="text-red-500">*</span></label>
           <input
