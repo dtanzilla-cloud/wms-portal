@@ -115,7 +115,7 @@ export default function ImportSKUsPage() {
     for (const row of validRows) {
       try {
         const qty = row.quantity ? parseInt(row.quantity) : 0
-        const { data: sku, error: err } = await supabase.from('skus').insert({
+        const { data: sku, error: err } = await supabase.from('skus').upsert({
           customer_id: customerId,
           sku_code: row.sku_code,
           description: row.description,
@@ -123,15 +123,15 @@ export default function ImportSKUsPage() {
           quantity: qty || null,
           storage_unit: row.storage_unit ? parseInt(row.storage_unit) : null,
           dimensions_cm: row.dimensions_cm || null,
-        }).select('id').single()
+        }, { onConflict: 'customer_id,sku_code' }).select('id').single()
         if (err) throw err
-        const { error: lvlErr } = await supabase.from('inventory_levels').insert({
+        const { error: lvlErr } = await supabase.from('inventory_levels').upsert({
           sku_id: sku.id,
           customer_id: customerId,
           quantity_on_hand: qty,
           quantity_reserved: 0,
           quantity_available: qty,
-        })
+        }, { onConflict: 'sku_id' })
         if (lvlErr) throw lvlErr
         count++
       } catch (e: any) {
