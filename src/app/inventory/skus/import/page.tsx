@@ -144,13 +144,20 @@ export default function ImportSKUsPage() {
           skuId = inserted.id
         }
 
-        // Only insert a movement if there's a quantity to record
-        if (qty > 0 && !existing) {
+        // Adjust inventory to match the imported quantity
+        const { data: level } = await supabase
+          .from('inventory_levels')
+          .select('quantity_on_hand')
+          .eq('sku_id', skuId)
+          .maybeSingle()
+        const currentQty = (level as any)?.quantity_on_hand ?? 0
+        const diff = qty - currentQty
+        if (diff !== 0) {
           const { error: mvErr } = await supabase.from('inventory_movements').insert({
             sku_id: skuId,
             customer_id: customerId,
             movement_type: 'adjustment',
-            quantity: qty,
+            quantity: diff,
             created_by: profile.id,
           })
           if (mvErr) throw mvErr
