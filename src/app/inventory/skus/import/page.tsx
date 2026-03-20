@@ -222,7 +222,7 @@ export default function ImportSKUsPage() {
                         <td className="px-3 py-2">
                           {row.valid
                             ? <CheckCircle size={13} className="text-green-500" />
-                            : <XCircle size={13} className="text-red-500" title={row.error} />}
+                            : <span title={row.error}><XCircle size={13} className="text-red-500" /></span>}
                         </td>
                         <td className="px-3 py-2 font-mono font-medium text-gray-800">{row.sku_code}</td>
                         <td className="px-3 py-2 text-gray-600">{row.description}</td>
