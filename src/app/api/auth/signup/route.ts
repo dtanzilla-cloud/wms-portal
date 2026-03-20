@@ -7,7 +7,7 @@ export async function POST(req: NextRequest) {
     if (!company || !full_name || !email || !password)
       return NextResponse.json({ error: 'All fields required' }, { status: 400 })
 
-    const supabase = await createAdminClient()
+    const supabase = createAdminClient()
 
     // Create auth user
     const { data: authData, error: authError } = await supabase.auth.admin.createUser({

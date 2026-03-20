@@ -1,8 +1,26 @@
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
-import { Users, Plus } from 'lucide-react'
-import CustomerStatusToggle from '@/components/admin/CustomerStatusToggle'
+import { Users, Plus, CheckCircle, Clock, Ban, Pencil } from 'lucide-react'
+
+function StatusBadge({ status }: { status: string }) {
+  const styles: Record<string, string> = {
+    trial: 'bg-amber-50 text-amber-600',
+    active: 'bg-green-50 text-green-600',
+    suspended: 'bg-red-50 text-red-500',
+  }
+  const icons: Record<string, React.ReactNode> = {
+    trial: <Clock size={11} />,
+    active: <CheckCircle size={11} />,
+    suspended: <Ban size={11} />,
+  }
+  return (
+    <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium ${styles[status] ?? styles.trial}`}>
+      {icons[status]}
+      {status.charAt(0).toUpperCase() + status.slice(1)}
+    </span>
+  )
+}
 
 export default async function AdminCustomersPage() {
   const supabase = await createClient()
@@ -37,12 +55,13 @@ export default async function AdminCustomersPage() {
                 <th className="px-5 py-3 text-left text-xs font-medium text-gray-500">Status</th>
                 <th className="px-5 py-3 text-left text-xs font-medium text-gray-500">Trial ends</th>
                 <th className="px-5 py-3 text-left text-xs font-medium text-gray-500">Created</th>
+                <th className="px-5 py-3" />
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-50">
               {customers?.length === 0 && (
                 <tr>
-                  <td colSpan={5} className="px-5 py-12 text-center text-gray-400 text-xs">
+                  <td colSpan={6} className="px-5 py-12 text-center text-gray-400 text-xs">
                     <Users size={24} className="mx-auto mb-2 text-gray-300" />
                     No customers yet
                   </td>
@@ -57,13 +76,18 @@ export default async function AdminCustomersPage() {
                     <p className="text-xs text-gray-400 font-mono">{c.code}</p>
                   </td>
                   <td className="px-5 py-3 text-gray-600">{c.billing_email}</td>
-                  <td className="px-5 py-3"><CustomerStatusToggle customer={c} /></td>
+                  <td className="px-5 py-3"><StatusBadge status={c.status} /></td>
                   <td className="px-5 py-3 text-gray-500 text-xs">
                     {c.trial_ends_at
                       ? new Date(c.trial_ends_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
                       : '—'}
                   </td>
                   <td className="px-5 py-3 text-gray-400 text-xs">{new Date(c.created_at).toLocaleDateString()}</td>
+                  <td className="px-5 py-3 text-right">
+                    <Link href={`/admin/customers/${c.id}/edit`} className="inline-flex items-center gap-1 text-xs text-gray-500 hover:text-gray-800">
+                      <Pencil size={12} /> Edit
+                    </Link>
+                  </td>
                 </tr>
               ))}
             </tbody>

@@ -18,7 +18,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'All fields required' }, { status: 400 })
     }
 
-    const admin = await createAdminClient()
+    const admin = createAdminClient()
 
     // Create auth user
     const { data: authData, error: authError } = await admin.auth.admin.createUser({

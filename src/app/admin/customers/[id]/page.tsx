@@ -1,8 +1,27 @@
 import { createClient } from '@/lib/supabase/server'
 import { redirect, notFound } from 'next/navigation'
 import Link from 'next/link'
-import { ArrowLeft, ArrowDownCircle, ArrowUpCircle, Users, Package } from 'lucide-react'
-import CustomerStatusToggle from '@/components/admin/CustomerStatusToggle'
+import { ArrowLeft, ArrowDownCircle, ArrowUpCircle, Users, Package, Pencil, CheckCircle, Clock, Ban } from 'lucide-react'
+import DeleteCustomerButton from '@/components/admin/DeleteCustomerButton'
+
+function StatusBadge({ status }: { status: string }) {
+  const styles: Record<string, string> = {
+    trial: 'bg-amber-50 text-amber-600',
+    active: 'bg-green-50 text-green-600',
+    suspended: 'bg-red-50 text-red-500',
+  }
+  const icons: Record<string, React.ReactNode> = {
+    trial: <Clock size={11} />,
+    active: <CheckCircle size={11} />,
+    suspended: <Ban size={11} />,
+  }
+  return (
+    <span className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium ${styles[status] ?? styles.trial}`}>
+      {icons[status]}
+      {status.charAt(0).toUpperCase() + status.slice(1)}
+    </span>
+  )
+}
 
 export default async function AdminCustomerDetailPage({ params }: { params: { id: string } }) {
   const supabase = await createClient()
@@ -25,12 +44,21 @@ export default async function AdminCustomerDetailPage({ params }: { params: { id
         <Link href="/admin/customers" className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-700 mb-4">
           <ArrowLeft size={14} /> Back to customers
         </Link>
-        <div className="flex items-start justify-between">
+        <div className="flex items-start justify-between gap-4">
           <div>
             <h1 className="text-2xl font-semibold text-gray-900">{customer.name}</h1>
             <p className="text-sm text-gray-500 mt-0.5">{customer.billing_email} · <span className="font-mono text-xs">{customer.code}</span></p>
           </div>
-          <CustomerStatusToggle customer={customer} />
+          <div className="flex items-center gap-2 flex-shrink-0">
+            <StatusBadge status={customer.status} />
+            <Link
+              href={`/admin/customers/${customer.id}/edit`}
+              className="flex items-center gap-1.5 px-3 py-1.5 border border-gray-300 text-gray-700 text-sm rounded-md hover:bg-gray-50"
+            >
+              <Pencil size={14} /> Edit
+            </Link>
+            <DeleteCustomerButton id={customer.id} name={customer.name} />
+          </div>
         </div>
       </div>
 
@@ -51,9 +79,8 @@ export default async function AdminCustomerDetailPage({ params }: { params: { id
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-        {/* Users */}
         <div className="card">
-          <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
+          <div className="px-5 py-4 border-b border-gray-100">
             <h2 className="text-sm font-semibold text-gray-700">Users</h2>
           </div>
           {users?.length === 0 ? (
@@ -71,7 +98,6 @@ export default async function AdminCustomerDetailPage({ params }: { params: { id
           )}
         </div>
 
-        {/* Recent orders */}
         <div className="card">
           <div className="px-5 py-4 border-b border-gray-100">
             <h2 className="text-sm font-semibold text-gray-700">Recent orders</h2>
@@ -86,7 +112,7 @@ export default async function AdminCustomerDetailPage({ params }: { params: { id
                     {o.order_type === 'inbound'
                       ? <ArrowDownCircle size={13} className="text-blue-400" />
                       : <ArrowUpCircle size={13} className="text-orange-400" />}
-                    <Link href={`/orders/${o.order_type}/${o.id}`} className="text-sm font-medium text-blue-700 hover:underline font-mono text-xs">
+                    <Link href={`/orders/${o.order_type}/${o.id}`} className="font-mono text-xs text-blue-700 hover:underline">
                       {o.order_number}
                     </Link>
                   </div>
@@ -100,7 +126,6 @@ export default async function AdminCustomerDetailPage({ params }: { params: { id
         </div>
       </div>
 
-      {/* Account details */}
       <div className="card p-5 mt-5">
         <h2 className="text-sm font-semibold text-gray-700 mb-3">Account details</h2>
         <dl className="grid grid-cols-2 gap-3 text-sm">

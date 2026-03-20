@@ -25,13 +25,13 @@ const customerNav = [
 
 const staffNav = [
   { href: '/dashboard',           label: 'Dashboard',        icon: LayoutDashboard },
+  { href: '/admin/customers',     label: 'Customers',         icon: Users },
   { href: '/inventory',           label: 'Inventory',         icon: Package },
-  { href: '/inventory/history',   label: 'Stock History',     icon: History },
   { href: '/orders/inbound',      label: 'Inbound Queue',     icon: ArrowDownCircle },
   { href: '/orders/outbound',     label: 'Outbound Queue',    icon: ArrowUpCircle },
+  { href: '/inventory/history',   label: 'Stock History',     icon: History },
   { href: '/consignees',          label: 'Consignees',        icon: Building2 },
   { href: '/documents',           label: 'Documents',         icon: FileText },
-  { href: '/admin/customers',     label: 'Customers',         icon: Users },
   { href: '/settings',            label: 'Settings',          icon: Settings },
 ]
 

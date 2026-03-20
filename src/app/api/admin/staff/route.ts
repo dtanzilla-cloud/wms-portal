@@ -20,7 +20,7 @@ export async function POST(req: NextRequest) {
     if (!fullName || !email || !password) return NextResponse.json({ error: 'All fields required' }, { status: 400 })
     if (!['warehouse_staff', 'admin'].includes(role)) return NextResponse.json({ error: 'Invalid role' }, { status: 400 })
 
-    const admin = await createAdminClient()
+    const admin = createAdminClient()
 
     const { data: authData, error: authError } = await admin.auth.admin.createUser({
       email, password, email_confirm: true,
@@ -67,7 +67,7 @@ export async function DELETE(req: NextRequest) {
     const { userId } = await req.json()
     if (userId === caller.user.id) return NextResponse.json({ error: 'Cannot remove yourself' }, { status: 400 })
 
-    const admin = await createAdminClient()
+    const admin = createAdminClient()
     const { error } = await admin.auth.admin.deleteUser(userId)
     if (error) return NextResponse.json({ error: error.message }, { status: 400 })
 
