@@ -49,17 +49,25 @@ export default function ImportConsigneesPage() {
   const router = useRouter()
   const supabase = createClient()
   const [profile, setProfile] = useState<any>(null)
+  const [customers, setCustomers] = useState<any[]>([])
+  const [selectedCustomerId, setSelectedCustomerId] = useState('')
   const [rows, setRows] = useState<ParsedRow[]>([])
   const [importing, setImporting] = useState(false)
   const [imported, setImported] = useState(0)
   const [errors, setErrors] = useState<string[]>([])
   const [done, setDone] = useState(false)
 
+  const isStaff = profile?.role === 'warehouse_staff' || profile?.role === 'admin'
+
   useEffect(() => {
     async function load() {
       const { data: { user } } = await supabase.auth.getUser()
       const { data: prof } = await supabase.from('profiles').select('*').eq('id', user!.id).single()
       setProfile(prof)
+      if (prof?.role === 'warehouse_staff' || prof?.role === 'admin') {
+        const { data: custs } = await supabase.from('customers').select('id, name').order('name')
+        setCustomers(custs ?? [])
+      }
     }
     load()
   }, [])
@@ -81,11 +89,18 @@ export default function ImportConsigneesPage() {
     let count = 0
     const errs: string[] = []
 
+    const customerId = isStaff ? selectedCustomerId : profile?.customer_id
+    if (!customerId) {
+      setErrors(['Please select a customer'])
+      setImporting(false)
+      return
+    }
+
     const validRows = rows.filter(r => r.valid)
     for (const row of validRows) {
       try {
         const { data: consignee, error: cErr } = await supabase.from('consignees').insert({
-          customer_id: profile?.customer_id,
+          customer_id: customerId,
           company_name: row.company_name,
           contact_name: row.contact_name || null,
           contact_phone: row.contact_phone || null,
@@ -153,7 +168,20 @@ export default function ImportConsigneesPage() {
       </div>
 
       {!done ? (
-        <div className="card p-5">
+        <div className="card p-5 space-y-5">
+          {isStaff && (
+            <div>
+              <label className="block text-xs font-medium text-gray-600 mb-1">Customer <span className="text-red-500">*</span></label>
+              <select
+                required value={selectedCustomerId} onChange={e => setSelectedCustomerId(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="">Select customer…</option>
+                {customers.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+              </select>
+            </div>
+          )}
+          <div>
           <h2 className="text-sm font-semibold text-gray-700 mb-4">Upload CSV</h2>
           <label className="flex flex-col items-center justify-center border-2 border-dashed border-gray-300 rounded-lg p-8 cursor-pointer hover:border-blue-400 hover:bg-blue-50 transition-colors">
             <Upload size={24} className="text-gray-400 mb-2" />
@@ -200,7 +228,7 @@ export default function ImportConsigneesPage() {
               <div className="flex items-center gap-3 mt-4">
                 <button
                   onClick={handleImport}
-                  disabled={importing || validCount === 0}
+                  disabled={importing || validCount === 0 || (isStaff && !selectedCustomerId)}
                   className="btn-primary flex items-center gap-2"
                 >
                   {importing ? 'Importing…' : `Import ${validCount} consignee${validCount !== 1 ? 's' : ''}`}
@@ -209,6 +237,7 @@ export default function ImportConsigneesPage() {
               </div>
             </div>
           )}
+          </div>
         </div>
       ) : (
         <div className="card p-8 text-center">
