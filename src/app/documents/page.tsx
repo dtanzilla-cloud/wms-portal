@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
+import Link from 'next/link'
 import { FileText, ArrowDownCircle, ArrowUpCircle } from 'lucide-react'
 
 export default async function DocumentsPage() {
@@ -15,9 +16,11 @@ export default async function DocumentsPage() {
 
   return (
     <div>
-      <div className="mb-6">
-        <h1 className="text-2xl font-semibold text-gray-900">Documents</h1>
-        <p className="text-sm text-gray-500 mt-1">{documents?.length ?? 0} documents</p>
+      <div className="mb-6 flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-semibold text-gray-900">Documents</h1>
+          <p className="text-sm text-gray-500 mt-1">{documents?.length ?? 0} documents — upload files from any order's detail page</p>
+        </div>
       </div>
 
       <div className="card">
@@ -37,7 +40,8 @@ export default async function DocumentsPage() {
                 <tr>
                   <td colSpan={isStaff ? 5 : 4} className="px-5 py-12 text-center text-gray-400 text-xs">
                     <FileText size={24} className="mx-auto mb-2 text-gray-300" />
-                    No documents yet
+                    <p>No documents yet</p>
+                    <p className="mt-1">Upload files from an <Link href="/orders/inbound" className="text-blue-600 hover:underline">inbound</Link> or <Link href="/orders/outbound" className="text-blue-600 hover:underline">outbound</Link> order</p>
                   </td>
                 </tr>
               )}
@@ -45,22 +49,20 @@ export default async function DocumentsPage() {
                 <tr key={doc.id} className="hover:bg-gray-50">
                   <td className="px-5 py-3">
                     <div className="flex items-center gap-2">
-                      <FileText size={14} className="text-gray-400 shrink-0" />
+                      <FileText size={14} className={doc.is_generated ? 'text-purple-500' : 'text-gray-400'} />
                       <span className="text-gray-800">{doc.filename}</span>
-                      {doc.is_generated && (
-                        <span className="text-xs bg-purple-100 text-purple-700 px-1.5 py-0.5 rounded">Generated</span>
-                      )}
+                      {doc.is_generated && <span className="text-xs bg-purple-100 text-purple-700 px-1.5 py-0.5 rounded">Generated</span>}
                     </div>
                   </td>
                   <td className="px-5 py-3 text-gray-600 capitalize">{doc.document_type.replace('_', ' ')}</td>
                   <td className="px-5 py-3">
                     {doc.orders && (
-                      <div className="flex items-center gap-1.5">
+                      <Link href={`/orders/${doc.orders.order_type}/${doc.order_id}`} className="flex items-center gap-1.5 hover:underline">
                         {doc.orders.order_type === 'inbound'
                           ? <ArrowDownCircle size={12} className="text-blue-400" />
                           : <ArrowUpCircle size={12} className="text-orange-400" />}
-                        <span className="text-gray-700 font-mono text-xs">{doc.orders.order_number}</span>
-                      </div>
+                        <span className="text-blue-700 font-mono text-xs">{doc.orders.order_number}</span>
+                      </Link>
                     )}
                   </td>
                   {isStaff && <td className="px-5 py-3 text-gray-500">{doc.customers?.name}</td>}

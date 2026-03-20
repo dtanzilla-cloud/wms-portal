@@ -69,7 +69,11 @@ export default async function InventoryPage() {
                 )}
                 {inventory?.map((row: any) => (
                   <tr key={row.sku_id} className="hover:bg-gray-50">
-                    <td className="px-5 py-3 font-mono text-xs text-blue-700">{row.skus?.sku_code}</td>
+                    <td className="px-5 py-3 font-mono text-xs">
+                      <Link href={`/inventory/skus/${row.sku_id}`} className="text-blue-700 hover:underline">
+                        {row.skus?.sku_code}
+                      </Link>
+                    </td>
                     <td className="px-5 py-3 text-gray-700">{row.skus?.description}</td>
                     <td className="px-5 py-3 text-right text-gray-700">{row.quantity_on_hand}</td>
                     <td className="px-5 py-3 text-right text-amber-600">{row.quantity_reserved}</td>

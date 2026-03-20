@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
-import { Users } from 'lucide-react'
+import Link from 'next/link'
+import { Users, Plus } from 'lucide-react'
 import CustomerStatusToggle from '@/components/admin/CustomerStatusToggle'
 
 export default async function AdminCustomersPage() {
@@ -16,17 +17,22 @@ export default async function AdminCustomersPage() {
 
   return (
     <div>
-      <div className="mb-6">
-        <h1 className="text-2xl font-semibold text-gray-900">Customers</h1>
-        <p className="text-sm text-gray-500 mt-1">{customers?.length ?? 0} accounts</p>
+      <div className="mb-6 flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-semibold text-gray-900">Customers</h1>
+          <p className="text-sm text-gray-500 mt-1">{customers?.length ?? 0} accounts</p>
+        </div>
+        <Link href="/admin/customers/new" className="btn-primary flex items-center gap-2">
+          <Plus size={15} /> Add customer
+        </Link>
       </div>
+
       <div className="card">
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
               <tr className="bg-gray-50 border-b border-gray-100">
                 <th className="px-5 py-3 text-left text-xs font-medium text-gray-500">Company</th>
-                <th className="px-5 py-3 text-left text-xs font-medium text-gray-500">Code</th>
                 <th className="px-5 py-3 text-left text-xs font-medium text-gray-500">Billing email</th>
                 <th className="px-5 py-3 text-left text-xs font-medium text-gray-500">Status</th>
                 <th className="px-5 py-3 text-left text-xs font-medium text-gray-500">Trial ends</th>
@@ -36,7 +42,7 @@ export default async function AdminCustomersPage() {
             <tbody className="divide-y divide-gray-50">
               {customers?.length === 0 && (
                 <tr>
-                  <td colSpan={6} className="px-5 py-12 text-center text-gray-400 text-xs">
+                  <td colSpan={5} className="px-5 py-12 text-center text-gray-400 text-xs">
                     <Users size={24} className="mx-auto mb-2 text-gray-300" />
                     No customers yet
                   </td>
@@ -44,8 +50,12 @@ export default async function AdminCustomersPage() {
               )}
               {customers?.map((c: any) => (
                 <tr key={c.id} className="hover:bg-gray-50">
-                  <td className="px-5 py-3 font-medium text-gray-800">{c.name}</td>
-                  <td className="px-5 py-3 font-mono text-xs text-gray-500">{c.code}</td>
+                  <td className="px-5 py-3">
+                    <Link href={`/admin/customers/${c.id}`} className="font-medium text-blue-700 hover:underline">
+                      {c.name}
+                    </Link>
+                    <p className="text-xs text-gray-400 font-mono">{c.code}</p>
+                  </td>
                   <td className="px-5 py-3 text-gray-600">{c.billing_email}</td>
                   <td className="px-5 py-3"><CustomerStatusToggle customer={c} /></td>
                   <td className="px-5 py-3 text-gray-500 text-xs">

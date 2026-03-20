@@ -1,7 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
-import { ArrowLeft, Building2, MapPin, Phone, Mail, ArrowUpCircle } from 'lucide-react'
+import { ArrowLeft, Building2, MapPin, Phone, Mail, ArrowUpCircle, Pencil } from 'lucide-react'
 
 export default async function ConsigneeDetailPage({ params }: { params: { id: string } }) {
   const supabase = await createClient()
@@ -45,9 +45,14 @@ export default async function ConsigneeDetailPage({ params }: { params: { id: st
               {isStaff && <p className="text-sm text-gray-500">{consignee.customers?.name}</p>}
             </div>
           </div>
-          <Link href={`/orders/outbound/new`} className="btn-primary flex items-center gap-2 text-sm">
-            <ArrowUpCircle size={14} /> New order
-          </Link>
+          <div className="flex items-center gap-2">
+            <Link href={`/consignees/${params.id}/edit`} className="btn-secondary flex items-center gap-2 text-sm">
+              <Pencil size={13} /> Edit
+            </Link>
+            <Link href={`/orders/outbound/new`} className="btn-primary flex items-center gap-2 text-sm">
+              <ArrowUpCircle size={14} /> New order
+            </Link>
+          </div>
         </div>
       </div>
 

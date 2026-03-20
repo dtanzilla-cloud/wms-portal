@@ -3,7 +3,7 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import {
   LayoutDashboard, Package, ArrowDownCircle, ArrowUpCircle,
-  FileText, Users, LogOut, Building2, ShieldCheck
+  FileText, Users, LogOut, Building2, ShieldCheck, History, UserPlus
 } from 'lucide-react'
 import type { Profile, Customer } from '@/types'
 
@@ -13,23 +13,24 @@ interface SidebarProps {
 }
 
 const customerNav = [
-  { href: '/dashboard',    label: 'Dashboard',       icon: LayoutDashboard },
-  { href: '/inventory',    label: 'Inventory',        icon: Package },
-  { href: '/orders/inbound',  label: 'Inbound Orders',  icon: ArrowDownCircle },
-  { href: '/orders/outbound', label: 'Outbound Orders', icon: ArrowUpCircle },
-  { href: '/consignees',   label: 'Consignees',       icon: Building2 },
-  { href: '/documents',    label: 'Documents',        icon: FileText },
+  { href: '/dashboard',           label: 'Dashboard',       icon: LayoutDashboard },
+  { href: '/inventory',           label: 'Inventory',        icon: Package },
+  { href: '/orders/inbound',      label: 'Inbound Orders',   icon: ArrowDownCircle },
+  { href: '/orders/outbound',     label: 'Outbound Orders',  icon: ArrowUpCircle },
+  { href: '/consignees',          label: 'Consignees',       icon: Building2 },
+  { href: '/documents',           label: 'Documents',        icon: FileText },
 ]
 
 const staffNav = [
-  { href: '/dashboard',        label: 'Dashboard',        icon: LayoutDashboard },
-  { href: '/inventory',        label: 'Inventory',         icon: Package },
-  { href: '/orders/inbound',   label: 'Inbound Queue',     icon: ArrowDownCircle },
-  { href: '/orders/outbound',  label: 'Outbound Queue',    icon: ArrowUpCircle },
-  { href: '/consignees',       label: 'Consignees',        icon: Building2 },
-  { href: '/documents',        label: 'Documents',         icon: FileText },
-  { href: '/admin/customers',  label: 'Customers',         icon: Users },
-  { href: '/admin',            label: 'Admin',             icon: ShieldCheck },
+  { href: '/dashboard',           label: 'Dashboard',        icon: LayoutDashboard },
+  { href: '/inventory',           label: 'Inventory',         icon: Package },
+  { href: '/inventory/history',   label: 'Stock History',     icon: History },
+  { href: '/orders/inbound',      label: 'Inbound Queue',     icon: ArrowDownCircle },
+  { href: '/orders/outbound',     label: 'Outbound Queue',    icon: ArrowUpCircle },
+  { href: '/consignees',          label: 'Consignees',        icon: Building2 },
+  { href: '/documents',           label: 'Documents',         icon: FileText },
+  { href: '/admin/customers',     label: 'Customers',         icon: Users },
+  { href: '/admin',               label: 'Admin',             icon: ShieldCheck },
 ]
 
 export default function Sidebar({ profile, customer }: SidebarProps) {
