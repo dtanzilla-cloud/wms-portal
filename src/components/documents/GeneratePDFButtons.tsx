@@ -1,13 +1,15 @@
 'use client'
 import { useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { FileText, Loader2 } from 'lucide-react'
 
 interface Props {
   orderId: string
-  onGenerated: () => void
+  onGenerated?: () => void
 }
 
 export default function GeneratePDFButtons({ orderId, onGenerated }: Props) {
+  const router = useRouter()
   const [loading, setLoading] = useState<string | null>(null)
   const [error, setError] = useState('')
 
@@ -23,7 +25,8 @@ export default function GeneratePDFButtons({ orderId, onGenerated }: Props) {
       const data = await res.json()
       if (!res.ok) throw new Error(data.error)
       if (data.url) window.open(data.url, '_blank')
-      onGenerated()
+      onGenerated?.()
+      router.refresh()
     } catch (e: any) {
       setError(e.message)
     } finally {

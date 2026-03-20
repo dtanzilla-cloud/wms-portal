@@ -108,6 +108,15 @@ export default async function OutboundOrderDetailPage({ params }: { params: { id
           </div>
 
           {/* Documents */}
+          <div className="card">
+            <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <FileText size={15} className="text-gray-500" />
+                <h2 className="text-sm font-semibold text-gray-700">Generate documents</h2>
+              </div>
+              <GeneratePDFButtons orderId={order.id} />
+            </div>
+          </div>
           <DocumentUpload orderId={order.id} documents={order.documents ?? []} />
         </div>
 
@@ -163,6 +172,12 @@ export default async function OutboundOrderDetailPage({ params }: { params: { id
                 <div className="flex justify-between">
                   <dt className="text-gray-500">Tracking</dt>
                   <dd className="text-gray-800 font-mono text-xs">{order.tracking_number}</dd>
+                </div>
+              )}
+              {order.reference_type && (
+                <div className="flex justify-between">
+                  <dt className="text-gray-500">{order.reference_type}</dt>
+                  <dd className="text-gray-800 font-mono text-xs">{order.reference_number || '—'}</dd>
                 </div>
               )}
               <div className="flex justify-between">

@@ -9,6 +9,13 @@ interface SKUOption { id: string; sku_code: string; description: string; unit: s
 interface ConsigneeOption { id: string; company_name: string; consignee_addresses: any[] }
 interface ItemRow { sku_id: string; quantity: number }
 
+const REF_TYPES = [
+  { value: '', label: 'None' },
+  { value: 'PO Number', label: 'PO Number' },
+  { value: 'BL Number', label: 'BL Number' },
+  { value: 'Other', label: 'Other' },
+]
+
 export default function NewOutboundOrderPage() {
   const router = useRouter()
   const supabase = createClient()
@@ -26,6 +33,8 @@ export default function NewOutboundOrderPage() {
   const [palletCount, setPalletCount] = useState('1')
   const [notes, setNotes] = useState('')
   const [deliveryInstructions, setDeliveryInstructions] = useState('')
+  const [referenceType, setReferenceType] = useState('')
+  const [referenceNumber, setReferenceNumber] = useState('')
   const [items, setItems] = useState<ItemRow[]>([{ sku_id: '', quantity: 1 }])
 
   const isStaff = profile?.role === 'warehouse_staff' || profile?.role === 'admin'
@@ -49,14 +58,14 @@ export default function NewOutboundOrderPage() {
   useEffect(() => {
     if (!effectiveCustomerId) { setSkus([]); setConsignees([]); setConsigneeId(''); return }
     Promise.all([
-      supabase.from('inventory_levels').select('sku_id, quantity_available, skus(sku_code, description, unit)')
-        .eq('customer_id', effectiveCustomerId).gt('quantity_available', 0),
+      supabase.from('skus').select('id, sku_code, description, unit, quantity')
+        .eq('customer_id', effectiveCustomerId).gt('quantity', 0).order('sku_code'),
       supabase.from('consignees').select('id, company_name, consignee_addresses(*)')
         .eq('customer_id', effectiveCustomerId).order('company_name'),
-    ]).then(([{ data: invData }, { data: consData }]) => {
-      setSkus((invData ?? []).map((row: any) => ({
-        id: row.sku_id, sku_code: row.skus?.sku_code, description: row.skus?.description,
-        unit: row.skus?.unit, quantity_available: row.quantity_available,
+    ]).then(([{ data: skuData }, { data: consData }]) => {
+      setSkus((skuData ?? []).map((s: any) => ({
+        id: s.id, sku_code: s.sku_code, description: s.description,
+        unit: s.unit, quantity_available: s.quantity ?? 0,
       })))
       setConsignees(consData ?? [])
       setConsigneeId(''); setConsigneeAddressId('')
@@ -93,6 +102,7 @@ export default function NewOutboundOrderPage() {
         consignee_id: consigneeId, consignee_address_id: consigneeAddressId || null,
         ship_by_date: shipByDate || null, pallet_count: parseInt(palletCount) || 1,
         notes: notes || null, delivery_instructions: deliveryInstructions || null,
+        reference_type: referenceType || null, reference_number: referenceNumber || null,
         created_by: profile.id,
       }).select().single()
       if (orderErr) throw orderErr
@@ -172,6 +182,20 @@ export default function NewOutboundOrderPage() {
               <label className="block text-xs font-medium text-gray-600 mb-1">Pallet count <span className="text-red-500">*</span></label>
               <input type="number" min="1" required value={palletCount} onChange={e => setPalletCount(e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-gray-600 mb-1">Reference type</label>
+              <select value={referenceType} onChange={e => { setReferenceType(e.target.value); setReferenceNumber('') }}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                {REF_TYPES.map(r => <option key={r.value} value={r.value}>{r.label}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-gray-600 mb-1">Reference number</label>
+              <input type="text" value={referenceNumber} onChange={e => setReferenceNumber(e.target.value)}
+                disabled={!referenceType}
+                placeholder={referenceType ? `Enter ${referenceType}…` : 'Select type first'}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-50 disabled:text-gray-400" />
             </div>
             <div className="col-span-2">
               <label className="block text-xs font-medium text-gray-600 mb-1">Delivery instructions</label>
