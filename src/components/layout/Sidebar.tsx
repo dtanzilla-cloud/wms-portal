@@ -3,9 +3,10 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import {
   LayoutDashboard, Package, ArrowDownCircle, ArrowUpCircle,
-  FileText, Users, LogOut, Building2, History, Settings
+  FileText, Users, History, Settings, Building2
 } from 'lucide-react'
 import type { Profile, Customer } from '@/types'
+import SignOutButton from './SignOutButton'
 
 interface SidebarProps {
   profile: Profile
@@ -97,15 +98,7 @@ export default function Sidebar({ profile, customer }: SidebarProps) {
       <div className="px-4 py-3 border-t border-gray-200">
         <p className="text-xs font-medium text-gray-800 truncate">{profile.full_name}</p>
         <p className="text-xs text-gray-500 truncate">{profile.email}</p>
-        <form action="/auth/signout" method="POST" className="mt-2">
-          <button
-            type="submit"
-            className="flex items-center gap-2 text-xs text-gray-500 hover:text-red-600 transition-colors"
-          >
-            <LogOut size={13} />
-            Sign out
-          </button>
-        </form>
+        <SignOutButton />
       </div>
     </aside>
   )
