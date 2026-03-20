@@ -1,7 +1,8 @@
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
-import { Users, CheckCircle, Clock, Ban } from 'lucide-react'
+import { Users } from 'lucide-react'
+import CustomerStatusToggle from '@/components/admin/CustomerStatusToggle'
 
 export default async function AdminCustomersPage() {
   const supabase = await createClient()
@@ -57,10 +58,7 @@ export default async function AdminCustomersPage() {
                     <td className="px-5 py-3 font-mono text-xs text-gray-500">{c.code}</td>
                     <td className="px-5 py-3 text-gray-600">{c.billing_email}</td>
                     <td className="px-5 py-3">
-                      <span className={`flex items-center gap-1.5 ${color}`}>
-                        <Icon size={13} />
-                        <span className="capitalize text-xs font-medium">{c.status}</span>
-                      </span>
+                      <CustomerStatusToggle customer={c} />
                     </td>
                     <td className="px-5 py-3 text-gray-500 text-xs">
                       {c.trial_ends_at

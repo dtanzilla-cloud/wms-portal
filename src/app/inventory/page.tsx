@@ -33,12 +33,15 @@ export default async function InventoryPage() {
           <p className="text-sm text-gray-500 mt-1">Current stock levels and pending shipments</p>
         </div>
         <div className="flex items-center gap-2">
+          <Link href="/inventory/history" className="btn-secondary text-sm flex items-center gap-2">
+            History
+          </Link>
           <Link href="/inventory/skus/new" className="btn-primary flex items-center gap-2 text-sm">
             <Plus size={14} /> Add SKU
           </Link>
-          <button className="btn-secondary text-sm flex items-center gap-2">
+          <a href="/api/inventory/export" className="btn-secondary text-sm flex items-center gap-2">
             Export CSV
-          </button>
+          </a>
         </div>
       </div>
 

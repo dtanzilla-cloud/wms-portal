@@ -3,6 +3,9 @@ import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import { ArrowLeft, ArrowUpCircle, Package, MapPin, FileText, CheckCircle } from 'lucide-react'
 import OrderStatusActions from '@/components/orders/OrderStatusActions'
+import DocumentUpload from '@/components/documents/DocumentUpload'
+import GeneratePDFButtons from '@/components/documents/GeneratePDFButtons'
+import { revalidatePath } from 'next/cache'
 
 export default async function OutboundOrderDetailPage({ params }: { params: { id: string } }) {
   const supabase = await createClient()
@@ -101,27 +104,7 @@ export default async function OutboundOrderDetailPage({ params }: { params: { id
           </div>
 
           {/* Documents */}
-          <div className="card">
-            <div className="px-5 py-4 border-b border-gray-100 flex items-center gap-2">
-              <FileText size={15} className="text-gray-500" />
-              <h2 className="text-sm font-semibold text-gray-700">Documents</h2>
-            </div>
-            {order.documents?.length === 0 ? (
-              <p className="px-5 py-6 text-xs text-gray-400 text-center">No documents attached</p>
-            ) : (
-              <div className="divide-y divide-gray-50">
-                {order.documents?.map((doc: any) => (
-                  <div key={doc.id} className="px-5 py-3 flex items-center justify-between">
-                    <div>
-                      <p className="text-sm text-gray-800">{doc.filename}</p>
-                      <p className="text-xs text-gray-400 capitalize">{doc.document_type.replace('_', ' ')}</p>
-                    </div>
-                    <span className="text-xs text-gray-400">{new Date(doc.created_at).toLocaleDateString()}</span>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
+          <DocumentUpload orderId={order.id} documents={order.documents ?? []} />
         </div>
 
         {/* Side panel */}

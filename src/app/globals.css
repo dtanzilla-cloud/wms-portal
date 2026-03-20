@@ -41,3 +41,23 @@
   .status-shipped   { @apply bg-green-100 text-green-700; }
   .status-cancelled { @apply bg-red-100 text-red-700; }
 }
+
+/* Tablet-optimised: larger tap targets on touch devices */
+@media (pointer: coarse) {
+  .btn-primary, .btn-secondary {
+    padding-top: 0.75rem;
+    padding-bottom: 0.75rem;
+    padding-left: 1.25rem;
+    padding-right: 1.25rem;
+    font-size: 1rem;
+  }
+  nav a {
+    padding-top: 0.75rem;
+    padding-bottom: 0.75rem;
+  }
+  input, select, textarea {
+    padding-top: 0.75rem;
+    padding-bottom: 0.75rem;
+    font-size: 1rem;
+  }
+}

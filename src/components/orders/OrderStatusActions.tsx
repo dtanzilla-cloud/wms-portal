@@ -67,6 +67,9 @@ export default function OrderStatusActions({ order, type }: Props) {
           }))
         )
       }
+      // Notify customer
+      fetch('/api/notifications', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ type: 'inbound_put_away', order_id: order.id }) })
     }
 
     // If shipped for outbound, add inventory deduction
@@ -83,6 +86,15 @@ export default function OrderStatusActions({ order, type }: Props) {
           }))
         )
       }
+      // Notify customer
+      fetch('/api/notifications', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ type: 'outbound_shipped', order_id: order.id }) })
+    }
+
+    // Notify staff when submitted
+    if (next === 'submitted') {
+      fetch('/api/notifications', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ type: `${type}_submitted`, order_id: order.id }) })
     }
 
     router.refresh()

@@ -21,9 +21,14 @@ export default async function ConsigneesPage() {
           <h1 className="text-2xl font-semibold text-gray-900">Consignees</h1>
           <p className="text-sm text-gray-500 mt-1">Your customers' ship-to addresses</p>
         </div>
-        <Link href="/consignees/new" className="btn-primary flex items-center gap-2">
-          <Plus size={15} /> Add consignee
-        </Link>
+        <div className="flex items-center gap-2">
+          <Link href="/consignees/import" className="btn-secondary flex items-center gap-2">
+            Import CSV
+          </Link>
+          <Link href="/consignees/new" className="btn-primary flex items-center gap-2">
+            <Plus size={15} /> Add consignee
+          </Link>
+        </div>
       </div>
 
       {consignees?.length === 0 && (
