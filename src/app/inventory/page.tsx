@@ -2,6 +2,7 @@ import { createClient } from '@/lib/supabase/server'
 import Link from 'next/link'
 import { AlertCircle, Plus, Upload } from 'lucide-react'
 import CustomerPicker from './CustomerPicker'
+import InventoryTable from './InventoryTable'
 
 export default async function InventoryPage({ searchParams }: { searchParams: { customer?: string } }) {
   const supabase = await createClient()
@@ -94,48 +95,12 @@ export default async function InventoryPage({ searchParams }: { searchParams: { 
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Stock levels table */}
-        <div className="lg:col-span-2 card">
+        <div className="lg:col-span-2 card overflow-hidden">
           <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
             <h2 className="text-sm font-semibold text-gray-700">Stock levels</h2>
-            <span className="text-xs text-gray-400">{inventory?.length ?? 0} SKUs</span>
+            <span className="text-xs text-gray-400">{inventory.length} SKUs</span>
           </div>
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="bg-gray-50 border-b border-gray-100">
-                  <th className="px-5 py-3 text-left text-xs font-medium text-gray-500">SKU</th>
-                  <th className="px-5 py-3 text-left text-xs font-medium text-gray-500">Description</th>
-                  <th className="px-5 py-3 text-right text-xs font-medium text-gray-500">On hand</th>
-                  <th className="px-5 py-3 text-right text-xs font-medium text-gray-500">Reserved</th>
-                  <th className="px-5 py-3 text-right text-xs font-medium text-gray-500">Available</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-50">
-                {(!inventory || inventory.length === 0) && (
-                  <tr>
-                    <td colSpan={5} className="px-5 py-8 text-center text-gray-400 text-xs">
-                      {isStaff && !selectedCustomerId ? 'Select a customer to view inventory, or view all above' : 'No inventory yet'}
-                    </td>
-                  </tr>
-                )}
-                {inventory?.map((row: any) => (
-                  <tr key={row.sku_id} className="hover:bg-gray-50">
-                    <td className="px-5 py-3 font-mono text-xs">
-                      <Link href={`/inventory/skus/${row.sku_id}`} className="text-blue-700 hover:underline">
-                        {row.skus?.sku_code}
-                      </Link>
-                    </td>
-                    <td className="px-5 py-3 text-gray-700">{row.skus?.description}</td>
-                    <td className="px-5 py-3 text-right text-gray-700">{row.quantity_on_hand}</td>
-                    <td className="px-5 py-3 text-right text-amber-600">{row.quantity_reserved}</td>
-                    <td className={`px-5 py-3 text-right font-medium ${row.quantity_available <= 0 ? 'text-red-600' : 'text-green-700'}`}>
-                      {row.quantity_available}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+          <InventoryTable rows={inventory} />
         </div>
 
         {/* Pending shipments panel */}
