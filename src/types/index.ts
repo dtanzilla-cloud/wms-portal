@@ -29,7 +29,8 @@ export interface SKU {
   sku_code: string
   description: string
   unit: string
-  weight_kg: number | null
+  quantity: number | null
+  storage_unit: number | null
   dimensions_cm: string | null
   created_at: string
 }

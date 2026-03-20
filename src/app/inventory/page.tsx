@@ -1,6 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
 import Link from 'next/link'
-import { Package, AlertCircle, Plus } from 'lucide-react'
+import { Package, AlertCircle, Plus, Upload } from 'lucide-react'
 
 export default async function InventoryPage() {
   const supabase = await createClient()
@@ -38,6 +38,9 @@ export default async function InventoryPage() {
           </Link>
           <Link href="/inventory/skus/new" className="btn-primary flex items-center gap-2 text-sm">
             <Plus size={14} /> Add SKU
+          </Link>
+          <Link href="/inventory/skus/import" className="btn-secondary text-sm flex items-center gap-2">
+            <Upload size={14} /> Import CSV
           </Link>
           <a href="/api/inventory/export" className="btn-secondary text-sm flex items-center gap-2">
             Export CSV

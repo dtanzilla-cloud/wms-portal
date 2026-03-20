@@ -11,14 +11,14 @@ export async function GET(req: NextRequest) {
 
   const { data: inventory } = await supabase
     .from('inventory_levels')
-    .select('*, skus(sku_code, description, unit, weight_kg, dimensions_cm), customers(name)')
+    .select('*, skus(sku_code, description, unit, quantity, storage_unit, dimensions_cm), customers(name)')
     .match(isStaff ? {} : { customer_id: profile?.customer_id })
     .order('quantity_available', { ascending: true })
 
   const rows = [
     isStaff
-      ? ['Customer', 'SKU Code', 'Description', 'Unit', 'On Hand', 'Reserved', 'Available', 'Weight (kg)', 'Dimensions', 'Last Movement']
-      : ['SKU Code', 'Description', 'Unit', 'On Hand', 'Reserved', 'Available', 'Weight (kg)', 'Dimensions', 'Last Movement'],
+      ? ['Customer', 'SKU Code', 'Description', 'Unit', 'On Hand', 'Reserved', 'Available', 'Quantity', 'Storage Unit', 'Dimensions', 'Last Movement']
+      : ['SKU Code', 'Description', 'Unit', 'On Hand', 'Reserved', 'Available', 'Quantity', 'Storage Unit', 'Dimensions', 'Last Movement'],
     ...(inventory ?? []).map((row: any) => {
       const base = [
         row.skus?.sku_code ?? '',
@@ -27,7 +27,8 @@ export async function GET(req: NextRequest) {
         row.quantity_on_hand,
         row.quantity_reserved,
         row.quantity_available,
-        row.skus?.weight_kg ?? '',
+        row.skus?.quantity ?? '',
+        row.skus?.storage_unit ?? '',
         row.skus?.dimensions_cm ?? '',
         row.last_movement_at ? new Date(row.last_movement_at).toLocaleDateString() : '',
       ]

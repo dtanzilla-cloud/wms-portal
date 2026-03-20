@@ -5,6 +5,8 @@ import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import { ArrowLeft } from 'lucide-react'
 
+const UOM_OPTIONS = ['each', 'case', 'bag', 'drum', 'tote']
+
 export default function NewSKUPage() {
   const router = useRouter()
   const supabase = createClient()
@@ -17,7 +19,8 @@ export default function NewSKUPage() {
   const [skuCode, setSkuCode] = useState('')
   const [description, setDescription] = useState('')
   const [unit, setUnit] = useState('each')
-  const [weightKg, setWeightKg] = useState('')
+  const [quantity, setQuantity] = useState('')
+  const [storageUnit, setStorageUnit] = useState('')
   const [dimensionsCm, setDimensionsCm] = useState('')
 
   const isStaff = profile?.role === 'warehouse_staff' || profile?.role === 'admin'
@@ -47,7 +50,8 @@ export default function NewSKUPage() {
         sku_code: skuCode.toUpperCase(),
         description,
         unit,
-        weight_kg: weightKg ? parseFloat(weightKg) : null,
+        quantity: quantity ? parseInt(quantity) : null,
+        storage_unit: storageUnit ? parseInt(storageUnit) : null,
         dimensions_cm: dimensionsCm || null,
       })
       if (err) throw err
@@ -103,31 +107,36 @@ export default function NewSKUPage() {
             value={unit} onChange={e => setUnit(e.target.value)}
             className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
           >
-            <option value="each">Each</option>
-            <option value="case">Case</option>
-            <option value="pallet">Pallet</option>
-            <option value="kg">Kg</option>
-            <option value="lb">Lb</option>
-            <option value="box">Box</option>
+            {UOM_OPTIONS.map(o => (
+              <option key={o} value={o}>{o.charAt(0).toUpperCase() + o.slice(1)}</option>
+            ))}
           </select>
         </div>
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1">Weight (kg)</label>
+            <label className="block text-xs font-medium text-gray-600 mb-1">Quantity</label>
             <input
-              type="number" step="0.001" value={weightKg} onChange={e => setWeightKg(e.target.value)}
+              type="number" step="1" min="0" value={quantity} onChange={e => setQuantity(e.target.value)}
               className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-              placeholder="0.000"
+              placeholder="0"
             />
           </div>
           <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1">Dimensions (cm)</label>
+            <label className="block text-xs font-medium text-gray-600 mb-1">Storage unit</label>
             <input
-              type="text" value={dimensionsCm} onChange={e => setDimensionsCm(e.target.value)}
+              type="number" step="1" min="0" value={storageUnit} onChange={e => setStorageUnit(e.target.value)}
               className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-              placeholder="30×20×10"
+              placeholder="0"
             />
           </div>
+        </div>
+        <div>
+          <label className="block text-xs font-medium text-gray-600 mb-1">Dimensions (cm)</label>
+          <input
+            type="text" value={dimensionsCm} onChange={e => setDimensionsCm(e.target.value)}
+            className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            placeholder="30×20×10"
+          />
         </div>
         {error && <p className="text-sm text-red-600 bg-red-50 px-3 py-2 rounded">{error}</p>}
         <div className="flex items-center gap-3 pt-2">
