@@ -5,6 +5,7 @@ import { ArrowLeft, ArrowUpCircle, Package, MapPin, FileText, CheckCircle } from
 import OrderStatusActions from '@/components/orders/OrderStatusActions'
 import DocumentUpload from '@/components/documents/DocumentUpload'
 import GeneratePDFButtons from '@/components/documents/GeneratePDFButtons'
+import CancelOrderButton from '@/components/orders/CancelOrderButton'
 import { revalidatePath } from 'next/cache'
 
 export default async function OutboundOrderDetailPage({ params }: { params: { id: string } }) {
@@ -43,6 +44,9 @@ export default async function OutboundOrderDetailPage({ params }: { params: { id
             {isStaff && <p className="text-sm text-gray-500 ml-9">{order.customers?.name}</p>}
           </div>
           {isStaff && <OrderStatusActions order={order} type="outbound" />}
+          {!isStaff && ['draft', 'submitted'].includes(order.status) && (
+            <CancelOrderButton orderId={order.id} />
+          )}
         </div>
       </div>
 

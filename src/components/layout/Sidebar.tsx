@@ -45,7 +45,7 @@ export default function Sidebar({ profile, customer }: SidebarProps) {
     : null
 
   return (
-    <aside className="w-60 min-h-screen bg-white border-r border-gray-200 flex flex-col">
+    <aside className="w-60 min-h-screen bg-white border-r border-gray-200 flex flex-col shadow-lg md:shadow-none">
       {/* Logo */}
       <div className="px-5 py-4 border-b border-gray-200">
         <span className="text-lg font-semibold text-blue-700 tracking-tight">WMS Portal</span>

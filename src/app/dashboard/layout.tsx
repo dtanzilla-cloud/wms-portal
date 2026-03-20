@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import Sidebar from '@/components/layout/Sidebar'
+import MobileSidebarWrapper from '@/components/layout/MobileSidebar'
 import TrialBanner from '@/components/layout/TrialBanner'
 import type { Profile, Customer } from '@/types'
 
@@ -34,8 +35,10 @@ export default async function DashboardLayout({ children }: { children: React.Re
 
   return (
     <div className="flex min-h-screen bg-gray-50">
-      <Sidebar profile={profile as Profile} customer={customer} />
-      <main className="flex-1 overflow-auto flex flex-col">
+      <MobileSidebarWrapper>
+        <Sidebar profile={profile as Profile} customer={customer} />
+      </MobileSidebarWrapper>
+      <main className="flex-1 overflow-auto flex flex-col min-w-0">
         {customer?.status === 'trial' && customer?.trial_ends_at && (
           <TrialBanner trialEndsAt={customer.trial_ends_at} expired={trialExpired} />
         )}
@@ -55,7 +58,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
             </div>
           </div>
         ) : (
-          <div className="max-w-7xl mx-auto px-6 py-6 w-full">
+          <div className="max-w-7xl mx-auto px-4 md:px-6 py-6 w-full pt-16 md:pt-6">
             {children}
           </div>
         )}

@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { ArrowLeft, ArrowDownCircle, Package, Truck, FileText, CheckCircle } from 'lucide-react'
 import OrderStatusActions from '@/components/orders/OrderStatusActions'
 import DocumentUpload from '@/components/documents/DocumentUpload'
+import CancelOrderButton from '@/components/orders/CancelOrderButton'
 
 export default async function InboundOrderDetailPage({ params }: { params: { id: string } }) {
   const supabase = await createClient()
@@ -43,6 +44,9 @@ export default async function InboundOrderDetailPage({ params }: { params: { id:
             {isStaff && <p className="text-sm text-gray-500 ml-9">{order.customers?.name}</p>}
           </div>
           {isStaff && <OrderStatusActions order={order} type="inbound" />}
+          {!isStaff && ['draft', 'submitted'].includes(order.status) && (
+            <CancelOrderButton orderId={order.id} />
+          )}
         </div>
       </div>
 
