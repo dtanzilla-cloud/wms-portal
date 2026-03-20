@@ -1,0 +1,64 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 222 47% 11%;
+    --card: 0 0% 100%;
+    --card-foreground: 222 47% 11%;
+    --border: 214 32% 91%;
+    --input: 214 32% 91%;
+    --primary: 221 83% 53%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 210 40% 96%;
+    --secondary-foreground: 222 47% 11%;
+    --muted: 210 40% 96%;
+    --muted-foreground: 215 16% 47%;
+    --accent: 210 40% 96%;
+    --accent-foreground: 222 47% 11%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+    --success: 142 71% 45%;
+    --success-foreground: 0 0% 100%;
+    --warning: 38 92% 50%;
+    --warning-foreground: 0 0% 100%;
+    --radius: 0.5rem;
+    --sidebar: 222 47% 97%;
+    --sidebar-border: 214 32% 91%;
+  }
+
+  * { @apply border-border; }
+
+  body {
+    @apply bg-[#f8fafc] text-foreground antialiased;
+    font-family: 'Inter', system-ui, sans-serif;
+  }
+}
+
+@layer components {
+  .card {
+    @apply bg-white rounded-lg border border-gray-200 shadow-sm;
+  }
+  .btn-primary {
+    @apply bg-blue-600 hover:bg-blue-700 text-white font-medium px-4 py-2 rounded-md text-sm transition-colors;
+  }
+  .btn-secondary {
+    @apply bg-white hover:bg-gray-50 text-gray-700 font-medium px-4 py-2 rounded-md text-sm border border-gray-300 transition-colors;
+  }
+  .badge-trial {
+    @apply inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-amber-100 text-amber-800;
+  }
+  .badge-active {
+    @apply inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800;
+  }
+  .status-draft     { @apply bg-gray-100 text-gray-700; }
+  .status-submitted { @apply bg-blue-100 text-blue-700; }
+  .status-received  { @apply bg-indigo-100 text-indigo-700; }
+  .status-put_away  { @apply bg-purple-100 text-purple-700; }
+  .status-picked    { @apply bg-yellow-100 text-yellow-700; }
+  .status-packed    { @apply bg-orange-100 text-orange-700; }
+  .status-shipped   { @apply bg-green-100 text-green-700; }
+  .status-cancelled { @apply bg-red-100 text-red-700; }
+}
