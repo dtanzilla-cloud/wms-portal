@@ -114,16 +114,25 @@ export default function ImportSKUsPage() {
     const validRows = rows.filter(r => r.valid)
     for (const row of validRows) {
       try {
-        const { error: err } = await supabase.from('skus').insert({
+        const qty = row.quantity ? parseInt(row.quantity) : 0
+        const { data: sku, error: err } = await supabase.from('skus').insert({
           customer_id: customerId,
           sku_code: row.sku_code,
           description: row.description,
           unit: row.unit,
-          quantity: row.quantity ? parseInt(row.quantity) : null,
+          quantity: qty || null,
           storage_unit: row.storage_unit ? parseInt(row.storage_unit) : null,
           dimensions_cm: row.dimensions_cm || null,
-        })
+        }).select('id').single()
         if (err) throw err
+        const { error: lvlErr } = await supabase.from('inventory_levels').insert({
+          sku_id: sku.id,
+          customer_id: customerId,
+          quantity_on_hand: qty,
+          quantity_reserved: 0,
+          quantity_available: qty,
+        })
+        if (lvlErr) throw lvlErr
         count++
       } catch (e: any) {
         errs.push(`${row.sku_code}: ${e.message}`)

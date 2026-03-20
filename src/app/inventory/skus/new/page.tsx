@@ -45,16 +45,25 @@ export default function NewSKUPage() {
     try {
       const customerId = isStaff ? selectedCustomerId : profile?.customer_id
       if (!customerId) throw new Error('Please select a customer')
-      const { error: err } = await supabase.from('skus').insert({
+      const qty = quantity ? parseInt(quantity) : 0
+      const { data: sku, error: err } = await supabase.from('skus').insert({
         customer_id: customerId,
         sku_code: skuCode.toUpperCase(),
         description,
         unit,
-        quantity: quantity ? parseInt(quantity) : null,
+        quantity: qty || null,
         storage_unit: storageUnit ? parseInt(storageUnit) : null,
         dimensions_cm: dimensionsCm || null,
-      })
+      }).select('id').single()
       if (err) throw err
+      const { error: lvlErr } = await supabase.from('inventory_levels').insert({
+        sku_id: sku.id,
+        customer_id: customerId,
+        quantity_on_hand: qty,
+        quantity_reserved: 0,
+        quantity_available: qty,
+      })
+      if (lvlErr) throw lvlErr
       router.push('/inventory')
     } catch (e: any) {
       setError(e.message)
