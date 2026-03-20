@@ -1,38 +1,70 @@
 import { createClient } from '@/lib/supabase/server'
 import Link from 'next/link'
-import { Package, AlertCircle, Plus, Upload } from 'lucide-react'
+import { AlertCircle, Plus, Upload } from 'lucide-react'
+import CustomerPicker from './CustomerPicker'
 
-export default async function InventoryPage() {
+export default async function InventoryPage({ searchParams }: { searchParams: { customer?: string } }) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   const { data: profile } = await supabase.from('profiles').select('*').eq('id', user!.id).single()
   const isStaff = profile?.role === 'warehouse_staff' || profile?.role === 'admin'
 
-  const { data: inventory } = await supabase
+  // For staff: load all customers for the picker
+  let customers: { id: string; name: string }[] = []
+  if (isStaff) {
+    const { data } = await supabase.from('customers').select('id, name').order('name')
+    customers = data ?? []
+  }
+
+  // Determine which customer to filter by
+  const selectedCustomerId = isStaff
+    ? (searchParams.customer ?? '')
+    : (profile?.customer_id ?? '')
+
+  // Build inventory query
+  let inventoryQuery = supabase
     .from('inventory_levels')
     .select('*, skus(sku_code, description, unit)')
-    .match(isStaff ? {} : { customer_id: profile?.customer_id })
     .order('quantity_available', { ascending: true })
 
+  if (selectedCustomerId) {
+    inventoryQuery = inventoryQuery.eq('customer_id', selectedCustomerId)
+  }
+
+  const { data: inventory } = await inventoryQuery
+
   // Pending outbound orders
-  const { data: pendingOrders } = await supabase
+  let ordersQuery = supabase
     .from('orders')
     .select('id, order_number, ship_by_date, status, order_items(quantity, skus(sku_code, description))')
     .eq('order_type', 'outbound')
     .in('status', ['submitted', 'picked', 'packed'])
-    .match(isStaff ? {} : { customer_id: profile?.customer_id })
     .order('ship_by_date', { ascending: true })
 
+  if (selectedCustomerId) {
+    ordersQuery = ordersQuery.eq('customer_id', selectedCustomerId)
+  }
+
+  const { data: pendingOrders } = await ordersQuery
+
   const today = new Date()
+  const selectedCustomerName = customers.find(c => c.id === selectedCustomerId)?.name
 
   return (
     <div>
       <div className="mb-6 flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-semibold text-gray-900">Inventory</h1>
-          <p className="text-sm text-gray-500 mt-1">Current stock levels and pending shipments</p>
+          <p className="text-sm text-gray-500 mt-1">
+            {isStaff
+              ? selectedCustomerName ? `Showing inventory for ${selectedCustomerName}` : 'Showing all customers'
+              : 'Current stock levels and pending shipments'}
+          </p>
         </div>
         <div className="flex items-center gap-2">
+          {isStaff && (
+            <CustomerPicker customers={customers} selectedId={selectedCustomerId} />
+          )}
           <Link href="/inventory/history" className="btn-secondary text-sm flex items-center gap-2">
             History
           </Link>
@@ -67,8 +99,12 @@ export default async function InventoryPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-50">
-                {inventory?.length === 0 && (
-                  <tr><td colSpan={5} className="px-5 py-8 text-center text-gray-400 text-xs">No inventory yet</td></tr>
+                {(!inventory || inventory.length === 0) && (
+                  <tr>
+                    <td colSpan={5} className="px-5 py-8 text-center text-gray-400 text-xs">
+                      {isStaff && !selectedCustomerId ? 'Select a customer to view inventory, or view all above' : 'No inventory yet'}
+                    </td>
+                  </tr>
                 )}
                 {inventory?.map((row: any) => (
                   <tr key={row.sku_id} className="hover:bg-gray-50">
@@ -96,7 +132,7 @@ export default async function InventoryPage() {
             <h2 className="text-sm font-semibold text-gray-700">Pending to ship</h2>
           </div>
           <div className="divide-y divide-gray-50">
-            {pendingOrders?.length === 0 && (
+            {(!pendingOrders || pendingOrders.length === 0) && (
               <p className="px-5 py-8 text-xs text-gray-400 text-center">No pending shipments</p>
             )}
             {pendingOrders?.map((order: any) => {
