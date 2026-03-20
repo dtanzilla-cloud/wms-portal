@@ -1,6 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
-import Link from 'next/link'
 import { Users } from 'lucide-react'
 import CustomerStatusToggle from '@/components/admin/CustomerStatusToggle'
 
@@ -12,21 +11,15 @@ export default async function AdminCustomersPage() {
 
   const { data: customers } = await supabase
     .from('customers')
-    .select('*, profiles(count)')
+    .select('*')
     .order('created_at', { ascending: false })
-
-  const statusIcon = { active: CheckCircle, trial: Clock, suspended: Ban }
-  const statusColor = { active: 'text-green-600', trial: 'text-amber-600', suspended: 'text-red-500' }
 
   return (
     <div>
-      <div className="mb-6 flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-semibold text-gray-900">Customers</h1>
-          <p className="text-sm text-gray-500 mt-1">{customers?.length ?? 0} accounts</p>
-        </div>
+      <div className="mb-6">
+        <h1 className="text-2xl font-semibold text-gray-900">Customers</h1>
+        <p className="text-sm text-gray-500 mt-1">{customers?.length ?? 0} accounts</p>
       </div>
-
       <div className="card">
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
@@ -49,28 +42,20 @@ export default async function AdminCustomersPage() {
                   </td>
                 </tr>
               )}
-              {customers?.map((c: any) => {
-                const Icon = statusIcon[c.status as keyof typeof statusIcon] ?? Clock
-                const color = statusColor[c.status as keyof typeof statusColor] ?? 'text-gray-500'
-                return (
-                  <tr key={c.id} className="hover:bg-gray-50">
-                    <td className="px-5 py-3 font-medium text-gray-800">{c.name}</td>
-                    <td className="px-5 py-3 font-mono text-xs text-gray-500">{c.code}</td>
-                    <td className="px-5 py-3 text-gray-600">{c.billing_email}</td>
-                    <td className="px-5 py-3">
-                      <CustomerStatusToggle customer={c} />
-                    </td>
-                    <td className="px-5 py-3 text-gray-500 text-xs">
-                      {c.trial_ends_at
-                        ? new Date(c.trial_ends_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
-                        : '—'}
-                    </td>
-                    <td className="px-5 py-3 text-gray-400 text-xs">
-                      {new Date(c.created_at).toLocaleDateString()}
-                    </td>
-                  </tr>
-                )
-              })}
+              {customers?.map((c: any) => (
+                <tr key={c.id} className="hover:bg-gray-50">
+                  <td className="px-5 py-3 font-medium text-gray-800">{c.name}</td>
+                  <td className="px-5 py-3 font-mono text-xs text-gray-500">{c.code}</td>
+                  <td className="px-5 py-3 text-gray-600">{c.billing_email}</td>
+                  <td className="px-5 py-3"><CustomerStatusToggle customer={c} /></td>
+                  <td className="px-5 py-3 text-gray-500 text-xs">
+                    {c.trial_ends_at
+                      ? new Date(c.trial_ends_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+                      : '—'}
+                  </td>
+                  <td className="px-5 py-3 text-gray-400 text-xs">{new Date(c.created_at).toLocaleDateString()}</td>
+                </tr>
+              ))}
             </tbody>
           </table>
         </div>
