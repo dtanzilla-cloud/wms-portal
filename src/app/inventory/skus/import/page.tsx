@@ -115,7 +115,7 @@ export default function ImportSKUsPage() {
     for (const row of validRows) {
       try {
         const qty = row.quantity ? parseInt(row.quantity) : 0
-        const { data: sku, error: err } = await supabase.from('skus').upsert({
+        const skuPayload = {
           customer_id: customerId,
           sku_code: row.sku_code,
           description: row.description,
@@ -123,10 +123,30 @@ export default function ImportSKUsPage() {
           quantity: qty || null,
           storage_unit: row.storage_unit ? parseInt(row.storage_unit) : null,
           dimensions_cm: row.dimensions_cm || null,
-        }, { onConflict: 'customer_id,sku_code' }).select('id').single()
-        if (err) throw err
+        }
+
+        // Check if SKU already exists
+        const { data: existing } = await supabase
+          .from('skus')
+          .select('id')
+          .eq('customer_id', customerId)
+          .eq('sku_code', row.sku_code)
+          .maybeSingle()
+
+        let skuId: string
+        if (existing) {
+          const { error: upErr } = await supabase.from('skus').update(skuPayload).eq('id', existing.id)
+          if (upErr) throw upErr
+          skuId = existing.id
+        } else {
+          const { data: inserted, error: insErr } = await supabase.from('skus').insert(skuPayload).select('id').single()
+          if (insErr) throw insErr
+          skuId = inserted.id
+        }
+
+        // Upsert inventory_levels
         const { error: lvlErr } = await supabase.from('inventory_levels').upsert({
-          sku_id: sku.id,
+          sku_id: skuId,
           customer_id: customerId,
           quantity_on_hand: qty,
           quantity_reserved: 0,
