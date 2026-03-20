@@ -21,17 +21,29 @@ export default async function InventoryPage({ searchParams }: { searchParams: { 
     ? (searchParams.customer ?? '')
     : (profile?.customer_id ?? '')
 
-  // Build inventory query
-  let inventoryQuery = supabase
+  // Query inventory levels from the view (no nested join — it's a view)
+  let levelsQuery = supabase
     .from('inventory_levels')
-    .select('*, skus(sku_code, description, unit)')
+    .select('sku_id, customer_id, quantity_on_hand, quantity_reserved, quantity_available')
     .order('quantity_available', { ascending: true })
 
   if (selectedCustomerId) {
-    inventoryQuery = inventoryQuery.eq('customer_id', selectedCustomerId)
+    levelsQuery = levelsQuery.eq('customer_id', selectedCustomerId)
   }
 
-  const { data: inventory } = await inventoryQuery
+  const { data: levels } = await levelsQuery
+
+  // Fetch SKU details separately and merge
+  let inventory: any[] = []
+  if (levels && levels.length > 0) {
+    const skuIds = levels.map((r: any) => r.sku_id)
+    const { data: skuRows } = await supabase
+      .from('skus')
+      .select('id, sku_code, description, unit')
+      .in('id', skuIds)
+    const skuMap = Object.fromEntries((skuRows ?? []).map((s: any) => [s.id, s]))
+    inventory = levels.map((row: any) => ({ ...row, skus: skuMap[row.sku_id] }))
+  }
 
   // Pending outbound orders
   let ordersQuery = supabase
