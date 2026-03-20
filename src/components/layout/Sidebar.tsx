@@ -3,7 +3,7 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import {
   LayoutDashboard, Package, ArrowDownCircle, ArrowUpCircle,
-  FileText, Users, LogOut, Building2, ShieldCheck, History, UserPlus
+  FileText, Users, LogOut, Building2, History, Settings
 } from 'lucide-react'
 import type { Profile, Customer } from '@/types'
 
@@ -19,6 +19,7 @@ const customerNav = [
   { href: '/orders/outbound',     label: 'Outbound Orders',  icon: ArrowUpCircle },
   { href: '/consignees',          label: 'Consignees',       icon: Building2 },
   { href: '/documents',           label: 'Documents',        icon: FileText },
+  { href: '/settings',            label: 'Settings',         icon: Settings },
 ]
 
 const staffNav = [
@@ -30,7 +31,7 @@ const staffNav = [
   { href: '/consignees',          label: 'Consignees',        icon: Building2 },
   { href: '/documents',           label: 'Documents',         icon: FileText },
   { href: '/admin/customers',     label: 'Customers',         icon: Users },
-  { href: '/admin',               label: 'Admin',             icon: ShieldCheck },
+  { href: '/settings',            label: 'Settings',          icon: Settings },
 ]
 
 export default function Sidebar({ profile, customer }: SidebarProps) {
@@ -68,7 +69,13 @@ export default function Sidebar({ profile, customer }: SidebarProps) {
       {/* Nav */}
       <nav className="flex-1 px-3 py-4 space-y-0.5">
         {nav.map(({ href, label, icon: Icon }) => {
-          const active = pathname === href || pathname.startsWith(href + '/')
+          // A link is active if it matches exactly, or is a prefix — BUT only if no
+          // other nav item is a longer (more specific) match for the current path.
+          const isPrefix = pathname === href || pathname.startsWith(href + '/')
+          const moreSpecificExists = nav.some(
+            other => other.href !== href && other.href.startsWith(href) && (pathname === other.href || pathname.startsWith(other.href + '/'))
+          )
+          const active = isPrefix && !moreSpecificExists
           return (
             <Link
               key={href}
