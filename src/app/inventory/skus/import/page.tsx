@@ -144,15 +144,17 @@ export default function ImportSKUsPage() {
           skuId = inserted.id
         }
 
-        // Upsert inventory_levels
-        const { error: lvlErr } = await supabase.from('inventory_levels').upsert({
-          sku_id: skuId,
-          customer_id: customerId,
-          quantity_on_hand: qty,
-          quantity_reserved: 0,
-          quantity_available: qty,
-        }, { onConflict: 'sku_id' })
-        if (lvlErr) throw lvlErr
+        // Only insert a movement if there's a quantity to record
+        if (qty > 0 && !existing) {
+          const { error: mvErr } = await supabase.from('inventory_movements').insert({
+            sku_id: skuId,
+            customer_id: customerId,
+            movement_type: 'adjustment',
+            quantity: qty,
+            created_by: profile.id,
+          })
+          if (mvErr) throw mvErr
+        }
         count++
       } catch (e: any) {
         errs.push(`${row.sku_code}: ${e.message}`)

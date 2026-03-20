@@ -56,14 +56,16 @@ export default function NewSKUPage() {
         dimensions_cm: dimensionsCm || null,
       }).select('id').single()
       if (err) throw err
-      const { error: lvlErr } = await supabase.from('inventory_levels').insert({
-        sku_id: sku.id,
-        customer_id: customerId,
-        quantity_on_hand: qty,
-        quantity_reserved: 0,
-        quantity_available: qty,
-      })
-      if (lvlErr) throw lvlErr
+      if (qty > 0) {
+        const { error: mvErr } = await supabase.from('inventory_movements').insert({
+          sku_id: sku.id,
+          customer_id: customerId,
+          movement_type: 'adjustment',
+          quantity: qty,
+          created_by: profile.id,
+        })
+        if (mvErr) throw mvErr
+      }
       router.push('/inventory')
     } catch (e: any) {
       setError(e.message)
