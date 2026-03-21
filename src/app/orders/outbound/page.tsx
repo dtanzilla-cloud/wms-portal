@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import Link from 'next/link'
-import { Plus, ArrowUpCircle } from 'lucide-react'
+import { Plus } from 'lucide-react'
+import OutboundOrdersTable from './OutboundOrdersTable'
 
 export default async function OutboundOrdersPage() {
   const supabase = await createClient()
@@ -28,52 +29,7 @@ export default async function OutboundOrdersPage() {
       </div>
 
       <div className="card">
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="bg-gray-50 border-b border-gray-100">
-                <th className="px-5 py-3 text-left text-xs font-medium text-gray-500">Order #</th>
-                {isStaff && <th className="px-5 py-3 text-left text-xs font-medium text-gray-500">Customer</th>}
-                <th className="px-5 py-3 text-left text-xs font-medium text-gray-500">Consignee</th>
-                <th className="px-5 py-3 text-left text-xs font-medium text-gray-500">Ship by</th>
-                <th className="px-5 py-3 text-left text-xs font-medium text-gray-500">Pallets</th>
-                <th className="px-5 py-3 text-left text-xs font-medium text-gray-500">Status</th>
-                <th className="px-5 py-3 text-left text-xs font-medium text-gray-500">Created</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-50">
-              {orders?.length === 0 && (
-                <tr><td colSpan={7} className="px-5 py-8 text-center text-gray-400 text-xs">No outbound orders yet</td></tr>
-              )}
-              {orders?.map((order: any) => (
-                <tr key={order.id} className="hover:bg-gray-50 cursor-pointer">
-                  <td className="px-5 py-3">
-                    <Link href={`/orders/outbound/${order.id}`} className="font-medium text-blue-700 hover:underline flex items-center gap-1.5">
-                      <ArrowUpCircle size={13} className="text-orange-400" />
-                      {order.order_number}
-                    </Link>
-                  </td>
-                  {isStaff && <td className="px-5 py-3 text-gray-600">{order.customers?.name}</td>}
-                  <td className="px-5 py-3 text-gray-600">{order.consignees?.company_name ?? '—'}</td>
-                  <td className="px-5 py-3 text-gray-600">
-                    {order.ship_by_date
-                      ? new Date(order.ship_by_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
-                      : '—'}
-                  </td>
-                  <td className="px-5 py-3 text-gray-600">{order.pallet_count}</td>
-                  <td className="px-5 py-3">
-                    <span className={`status-${order.status} px-2 py-0.5 rounded text-xs font-medium`}>
-                      {order.status.replace('_', ' ')}
-                    </span>
-                  </td>
-                  <td className="px-5 py-3 text-gray-400 text-xs">
-                    {new Date(order.created_at).toLocaleDateString()}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        <OutboundOrdersTable orders={orders ?? []} isStaff={isStaff} />
       </div>
     </div>
   )
