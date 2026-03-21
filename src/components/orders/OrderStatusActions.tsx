@@ -9,25 +9,32 @@ interface Props {
   type: 'inbound' | 'outbound'
 }
 
-const inboundFlow = ['draft', 'submitted', 'received', 'put_away']
-const outboundFlow = ['draft', 'submitted', 'picked', 'packed', 'shipped']
+const nextStatusInbound: Record<string, string> = {
+  draft: 'submitted',
+  submitted: 'received',
+  received: 'put_away',
+}
 
-const nextLabel: Record<string, string> = {
+const nextStatusOutbound: Record<string, string> = {
+  draft: 'submitted',
+  submitted: 'picked',
+  picked: 'packed',
+  packed: 'shipped',
+}
+
+const nextLabelInbound: Record<string, string> = {
   draft: 'Mark submitted',
   submitted: 'Mark received',
   received: 'Mark put away',
   put_away: '',
+}
+
+const nextLabelOutbound: Record<string, string> = {
+  draft: 'Mark submitted',
+  submitted: 'Mark picked',
   picked: 'Mark packed',
   packed: 'Mark shipped',
   shipped: '',
-}
-
-const nextStatus: Record<string, string> = {
-  draft: 'submitted',
-  submitted: 'received',
-  received: 'put_away',
-  picked: 'packed',
-  packed: 'shipped',
 }
 
 export default function OrderStatusActions({ order, type }: Props) {
@@ -39,8 +46,11 @@ export default function OrderStatusActions({ order, type }: Props) {
   const [carrier, setCarrier] = useState(order.carrier ?? '')
   const [tracking, setTracking] = useState(order.tracking_number ?? '')
 
-  const next = nextStatus[order.status]
-  const nextLbl = nextLabel[order.status]
+  const nextStatusMap = type === 'inbound' ? nextStatusInbound : nextStatusOutbound
+  const nextLabelMap  = type === 'inbound' ? nextLabelInbound  : nextLabelOutbound
+
+  const next    = nextStatusMap[order.status]
+  const nextLbl = nextLabelMap[order.status]
   const canCancel = !['shipped', 'put_away', 'cancelled'].includes(order.status)
 
   async function advance() {

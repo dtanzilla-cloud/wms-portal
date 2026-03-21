@@ -5,6 +5,7 @@ import { ArrowLeft, ArrowUpCircle, Package, MapPin, FileText, CheckCircle, Penci
 import OrderStatusActions from '@/components/orders/OrderStatusActions'
 import DocumentUpload from '@/components/documents/DocumentUpload'
 import GeneratePDFButtons from '@/components/documents/GeneratePDFButtons'
+import OrderPhotos from '@/components/orders/OrderPhotos'
 import CancelOrderButton from '@/components/orders/CancelOrderButton'
 import { revalidatePath } from 'next/cache'
 
@@ -125,6 +126,9 @@ export default async function OutboundOrderDetailPage({ params }: { params: { id
             </div>
           </div>
           <DocumentUpload orderId={order.id} documents={order.documents ?? []} />
+
+          {/* Photos */}
+          <OrderPhotos orderId={order.id} />
         </div>
 
         {/* Side panel */}

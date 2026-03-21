@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { ArrowLeft, ArrowDownCircle, Package, Truck, FileText, CheckCircle } from 'lucide-react'
 import OrderStatusActions from '@/components/orders/OrderStatusActions'
 import DocumentUpload from '@/components/documents/DocumentUpload'
+import OrderPhotos from '@/components/orders/OrderPhotos'
 import CancelOrderButton from '@/components/orders/CancelOrderButton'
 
 export default async function InboundOrderDetailPage({ params }: { params: { id: string } }) {
@@ -110,6 +111,9 @@ export default async function InboundOrderDetailPage({ params }: { params: { id:
 
           {/* Documents */}
           <DocumentUpload orderId={order.id} documents={order.documents ?? []} />
+
+          {/* Photos */}
+          <OrderPhotos orderId={order.id} />
         </div>
 
         {/* Side panel */}
