@@ -20,7 +20,7 @@ interface InventoryRow {
   }
 }
 
-type SortKey = 'sku_code' | 'description' | 'quantity' | 'reserved' | 'available' | 'storage_unit'
+type SortKey = 'sku_code' | 'description' | 'on_hand' | 'reserved' | 'available' | 'storage_unit'
 type SortDir = 'asc' | 'desc'
 
 function SortIcon({ col, sortKey, sortDir }: { col: SortKey; sortKey: SortKey; sortDir: SortDir }) {
@@ -54,7 +54,7 @@ export default function InventoryTable({ rows }: { rows: InventoryRow[] }) {
       switch (sortKey) {
         case 'sku_code':    av = a.skus?.sku_code ?? ''; bv = b.skus?.sku_code ?? ''; break
         case 'description': av = a.skus?.description ?? ''; bv = b.skus?.description ?? ''; break
-        case 'quantity':    av = a.skus?.quantity ?? 0; bv = b.skus?.quantity ?? 0; break
+        case 'on_hand':     av = a.quantity_on_hand; bv = b.quantity_on_hand; break
         case 'reserved':    av = a.quantity_reserved; bv = b.quantity_reserved; break
         case 'available':   av = a.quantity_available; bv = b.quantity_available; break
         case 'storage_unit':av = a.skus?.storage_unit ?? -1; bv = b.skus?.storage_unit ?? -1; break
@@ -149,7 +149,7 @@ export default function InventoryTable({ rows }: { rows: InventoryRow[] }) {
               </th>
               <Th col="sku_code" label="SKU" />
               <Th col="description" label="Description" />
-              <Th col="quantity" label="On hand" right />
+              <Th col="on_hand" label="On hand" right />
               <Th col="reserved" label="Reserved" right />
               <Th col="available" label="Available" right />
               <Th col="storage_unit" label="Storage unit" right />
@@ -178,7 +178,7 @@ export default function InventoryTable({ rows }: { rows: InventoryRow[] }) {
                 </td>
                 <td className="px-5 py-3 text-gray-700">{row.skus?.description}</td>
                 <td className="px-5 py-3 text-right text-gray-700">
-                  {row.skus?.quantity ?? 0}
+                  {row.quantity_on_hand}
                 </td>
                 <td className="px-5 py-3 text-right text-amber-600">{row.quantity_reserved}</td>
                 <td className={`px-5 py-3 text-right font-medium ${row.quantity_available <= 0 ? 'text-red-600' : 'text-green-700'}`}>
