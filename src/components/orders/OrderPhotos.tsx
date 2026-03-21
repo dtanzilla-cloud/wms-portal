@@ -14,6 +14,34 @@ interface Props {
   orderId: string
 }
 
+const MAX_PX = 1600   // longest edge in pixels
+const QUALITY = 0.82  // JPEG quality (0–1)
+
+function compressImage(file: File): Promise<File> {
+  return new Promise((resolve, reject) => {
+    const img = new Image()
+    img.onerror = reject
+    img.onload = () => {
+      const { width: w, height: h } = img
+      const scale = Math.min(1, MAX_PX / Math.max(w, h))
+      const canvas = document.createElement('canvas')
+      canvas.width  = Math.round(w * scale)
+      canvas.height = Math.round(h * scale)
+      canvas.getContext('2d')!.drawImage(img, 0, 0, canvas.width, canvas.height)
+      canvas.toBlob(
+        blob => {
+          if (!blob) return reject(new Error('Canvas compression failed'))
+          const name = file.name.replace(/\.[^.]+$/, '.jpg')
+          resolve(new File([blob], name, { type: 'image/jpeg' }))
+        },
+        'image/jpeg',
+        QUALITY,
+      )
+    }
+    img.src = URL.createObjectURL(file)
+  })
+}
+
 export default function OrderPhotos({ orderId }: Props) {
   const supabase = createClient()
   const fileRef = useRef<HTMLInputElement>(null)
@@ -51,8 +79,9 @@ export default function OrderPhotos({ orderId }: Props) {
     setUploading(true)
     setError('')
     try {
+      const compressed = await compressImage(file)
       const formData = new FormData()
-      formData.append('file', file)
+      formData.append('file', compressed)
       formData.append('order_id', orderId)
       const res = await fetch('/api/photos/upload', { method: 'POST', body: formData })
       const data = await res.json()
