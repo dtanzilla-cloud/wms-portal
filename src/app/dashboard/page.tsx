@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
+import Link from 'next/link'
 import { ArrowDownCircle, ArrowUpCircle, Package, Clock } from 'lucide-react'
 
 export default async function DashboardPage() {
@@ -33,10 +34,10 @@ export default async function DashboardPage() {
   ])
 
   const stats = [
-    { label: 'Pending inbound',  value: inboundPending.count ?? 0,  icon: ArrowDownCircle, color: 'text-blue-600',  bg: 'bg-blue-50' },
-    { label: 'Pending outbound', value: outboundPending.count ?? 0, icon: ArrowUpCircle,   color: 'text-orange-600', bg: 'bg-orange-50' },
-    { label: 'Shipped this month', value: outboundShipped.count ?? 0, icon: Clock,          color: 'text-green-600',  bg: 'bg-green-50' },
-    { label: 'Active SKUs',       value: skuCount.count ?? 0,        icon: Package,         color: 'text-purple-600', bg: 'bg-purple-50' },
+    { label: 'Pending inbound',   value: inboundPending.count ?? 0,  icon: ArrowDownCircle, color: 'text-blue-600',   bg: 'bg-blue-50',   href: '/orders/inbound' },
+    { label: 'Pending outbound',  value: outboundPending.count ?? 0, icon: ArrowUpCircle,   color: 'text-orange-600', bg: 'bg-orange-50', href: '/orders/outbound' },
+    { label: 'Shipped this month',value: outboundShipped.count ?? 0, icon: Clock,           color: 'text-green-600',  bg: 'bg-green-50',  href: '/orders/outbound' },
+    { label: 'Active SKUs',       value: skuCount.count ?? 0,        icon: Package,         color: 'text-purple-600', bg: 'bg-purple-50', href: '/inventory' },
   ]
 
   // Recent orders
@@ -58,16 +59,16 @@ export default async function DashboardPage() {
 
       {/* Stats */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-        {stats.map(({ label, value, icon: Icon, color, bg }) => (
-          <div key={label} className="card p-5">
+        {stats.map(({ label, value, icon: Icon, color, bg, href }) => (
+          <Link key={label} href={href} className="card p-5 hover:shadow-md transition-shadow group">
             <div className="flex items-center justify-between mb-3">
-              <p className="text-sm text-gray-500">{label}</p>
+              <p className="text-sm text-gray-500 group-hover:text-gray-700 transition-colors">{label}</p>
               <div className={`${bg} p-2 rounded-md`}>
                 <Icon size={16} className={color} />
               </div>
             </div>
             <p className="text-3xl font-semibold text-gray-900">{value}</p>
-          </div>
+          </Link>
         ))}
       </div>
 
@@ -81,7 +82,11 @@ export default async function DashboardPage() {
             <p className="px-5 py-8 text-sm text-gray-400 text-center">No orders yet</p>
           )}
           {recentOrders?.map((order: any) => (
-            <div key={order.id} className="px-5 py-3 flex items-center justify-between hover:bg-gray-50">
+            <Link
+              key={order.id}
+              href={`/orders/${order.order_type}/${order.id}`}
+              className="px-5 py-3 flex items-center justify-between hover:bg-gray-50 transition-colors"
+            >
               <div className="flex items-center gap-3">
                 {order.order_type === 'inbound'
                   ? <ArrowDownCircle size={15} className="text-blue-500" />
@@ -100,7 +105,7 @@ export default async function DashboardPage() {
                   {new Date(order.created_at).toLocaleDateString()}
                 </span>
               </div>
-            </div>
+            </Link>
           ))}
         </div>
       </div>
