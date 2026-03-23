@@ -31,7 +31,19 @@ export async function POST(req: NextRequest) {
 
       if (!order) return NextResponse.json({ error: 'Order not found' }, { status: 404 })
 
-      const staffEmail = process.env.STAFF_NOTIFICATION_EMAIL || process.env.NEXT_PUBLIC_STAFF_EMAIL
+      // Use admin profile emails from the database, fall back to env var
+      const { data: admins } = await supabase
+        .from('profiles')
+        .select('email')
+        .in('role', ['admin', 'warehouse_staff'])
+      const adminEmails = (admins ?? []).map((p: any) => p.email).filter(Boolean)
+      const staffEmail = adminEmails.length > 0
+        ? adminEmails[0]
+        : (process.env.STAFF_NOTIFICATION_EMAIL || process.env.NEXT_PUBLIC_STAFF_EMAIL)
+      const staffEmails = adminEmails.length > 0
+        ? adminEmails
+        : staffEmail ? [staffEmail] : []
+
       const customerEmail = order.customers?.billing_email
       const customerName = order.customers?.name ?? ''
       const orderNumber = order.order_number
@@ -39,48 +51,48 @@ export async function POST(req: NextRequest) {
       const sends: Promise<any>[] = []
 
       if (type === 'inbound_submitted') {
-        if (staffEmail) sends.push(sendInboundSubmitted(staffEmail, orderNumber, customerName))
+        staffEmails.forEach(e => sends.push(sendInboundSubmitted(e, orderNumber, customerName)))
         if (customerEmail) sends.push(sendInboundSubmittedCustomer(customerEmail, orderNumber))
       }
 
       if (type === 'inbound_received') {
         if (customerEmail) sends.push(sendInboundReceived(customerEmail, orderNumber))
-        if (staffEmail) sends.push(sendInboundReceived(staffEmail, orderNumber, customerName))
+        staffEmails.forEach(e => sends.push(sendInboundReceived(e, orderNumber, customerName)))
       }
 
       if (type === 'inbound_put_away') {
         if (customerEmail) sends.push(sendInboundPutAway(customerEmail, orderNumber))
-        if (staffEmail) sends.push(sendInboundPutAway(staffEmail, orderNumber, customerName))
+        staffEmails.forEach(e => sends.push(sendInboundPutAway(e, orderNumber, customerName)))
       }
 
       if (type === 'outbound_submitted') {
-        if (staffEmail) sends.push(sendOutboundSubmitted(staffEmail, orderNumber, customerName))
+        staffEmails.forEach(e => sends.push(sendOutboundSubmitted(e, orderNumber, customerName)))
         if (customerEmail) sends.push(sendOutboundSubmitted(customerEmail, orderNumber))
       }
 
       if (type === 'outbound_picked') {
         if (customerEmail) sends.push(sendOutboundPicked(customerEmail, orderNumber))
-        if (staffEmail) sends.push(sendOutboundPicked(staffEmail, orderNumber, customerName))
+        staffEmails.forEach(e => sends.push(sendOutboundPicked(e, orderNumber, customerName)))
       }
 
       if (type === 'outbound_packed') {
         if (customerEmail) sends.push(sendOutboundPacked(customerEmail, orderNumber))
-        if (staffEmail) sends.push(sendOutboundPacked(staffEmail, orderNumber, customerName))
+        staffEmails.forEach(e => sends.push(sendOutboundPacked(e, orderNumber, customerName)))
       }
 
       if (type === 'outbound_shipped') {
         if (customerEmail) sends.push(sendOutboundShipped(customerEmail, orderNumber, order.tracking_number ?? undefined))
-        if (staffEmail) sends.push(sendOutboundShipped(staffEmail, orderNumber, order.tracking_number ?? undefined, customerName))
+        staffEmails.forEach(e => sends.push(sendOutboundShipped(e, orderNumber, order.tracking_number ?? undefined, customerName)))
       }
 
       if (type === 'order_updated') {
         if (customerEmail) sends.push(sendOrderUpdated(customerEmail, orderNumber, order.order_type))
-        if (staffEmail) sends.push(sendOrderUpdated(staffEmail, orderNumber, order.order_type, customerName))
+        staffEmails.forEach(e => sends.push(sendOrderUpdated(e, orderNumber, order.order_type, customerName)))
       }
 
       if (type === 'order_cancelled') {
         if (customerEmail) sends.push(sendOrderCancelled(customerEmail, orderNumber, order.order_type))
-        if (staffEmail) sends.push(sendOrderCancelled(staffEmail, orderNumber, order.order_type, customerName))
+        staffEmails.forEach(e => sends.push(sendOrderCancelled(e, orderNumber, order.order_type, customerName)))
       }
 
       const results = await Promise.allSettled(sends)
@@ -88,7 +100,7 @@ export async function POST(req: NextRequest) {
         type,
         order_id,
         orderNumber,
-        staffEmail: staffEmail ?? null,
+        staffEmails,
         customerEmail: customerEmail ?? null,
         sendsQueued: sends.length,
         results: results.map((r, i) =>
