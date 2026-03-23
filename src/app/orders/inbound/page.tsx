@@ -1,6 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
 import Link from 'next/link'
-import { Plus } from 'lucide-react'
+import { Plus, Upload } from 'lucide-react'
 import InboundOrdersTable from './InboundOrdersTable'
 
 export default async function InboundOrdersPage() {
@@ -25,9 +25,14 @@ export default async function InboundOrdersPage() {
           </h1>
           <p className="text-sm text-gray-500 mt-1">{orders?.length ?? 0} orders</p>
         </div>
-        <Link href="/orders/inbound/new" className="btn-primary flex items-center gap-2">
-          <Plus size={15} /> New inbound
-        </Link>
+        <div className="flex items-center gap-2">
+          <Link href="/orders/inbound/import" className="btn-secondary flex items-center gap-2">
+            <Upload size={15} /> Import CSV
+          </Link>
+          <Link href="/orders/inbound/new" className="btn-primary flex items-center gap-2">
+            <Plus size={15} /> New inbound
+          </Link>
+        </div>
       </div>
 
       <div className="card">
