@@ -13,6 +13,11 @@ export default function CancelOrderButton({ orderId }: { orderId: string }) {
     if (!confirm('Cancel this order? This cannot be undone.')) return
     setLoading(true)
     await supabase.from('orders').update({ status: 'cancelled' }).eq('id', orderId)
+    fetch('/api/notifications', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ type: 'order_cancelled', order_id: orderId }),
+    })
     router.refresh()
     setLoading(false)
   }

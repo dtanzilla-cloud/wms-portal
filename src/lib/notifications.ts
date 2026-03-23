@@ -26,43 +26,157 @@ function btn(label: string, href: string) {
   return `<a href="${href}" style="display:inline-block;margin-top:16px;padding:10px 20px;background:#2563eb;color:#fff;border-radius:6px;text-decoration:none;font-size:14px;font-weight:500">${label}</a>`
 }
 
+function p(text: string) {
+  return `<p style="color:#475569;font-size:14px;line-height:1.6;margin:0 0 8px">${text}</p>`
+}
+
+// ── Inbound ──────────────────────────────────────────────────────────────────
+
 export async function sendInboundSubmitted(to: string, orderNumber: string, customerName: string) {
   await resend.emails.send({
     from: FROM, to,
     subject: `New inbound order ${orderNumber} — ${customerName}`,
     html: baseLayout('New inbound order received',
-      `<p style="color:#475569;font-size:14px;line-height:1.6">Customer <strong>${customerName}</strong> has submitted inbound order <strong>${orderNumber}</strong> and is awaiting warehouse receipt.</p>
+      `${p(`Customer <strong>${customerName}</strong> has submitted inbound order <strong>${orderNumber}</strong> and is awaiting warehouse receipt.`)}
       ${btn('View order', `${APP_URL}/orders/inbound`)}`)
   })
 }
 
-export async function sendInboundPutAway(to: string, orderNumber: string) {
+export async function sendInboundSubmittedCustomer(to: string, orderNumber: string) {
   await resend.emails.send({
     from: FROM, to,
-    subject: `Your shipment ${orderNumber} has been put away`,
-    html: baseLayout('Shipment received & put away',
-      `<p style="color:#475569;font-size:14px;line-height:1.6">Your inbound order <strong>${orderNumber}</strong> has been received and put away. Your inventory has been updated.</p>
-      ${btn('View inventory', `${APP_URL}/inventory`)}`)
+    subject: `Inbound order ${orderNumber} submitted`,
+    html: baseLayout('Order submitted',
+      `${p(`Your inbound order <strong>${orderNumber}</strong> has been submitted to the warehouse. You'll receive updates as it progresses.`)}
+      ${btn('View order', `${APP_URL}/orders/inbound`)}`)
   })
 }
 
-export async function sendOutboundShipped(to: string, orderNumber: string, tracking?: string) {
+export async function sendInboundReceived(to: string, orderNumber: string, customerName?: string) {
+  const isStaff = !!customerName
   await resend.emails.send({
     from: FROM, to,
-    subject: `Your order ${orderNumber} has been shipped`,
-    html: baseLayout('Order shipped',
-      `<p style="color:#475569;font-size:14px;line-height:1.6">Your outbound order <strong>${orderNumber}</strong> has been dispatched.</p>
-      ${tracking ? `<p style="color:#475569;font-size:14px">Tracking: <strong>${tracking}</strong></p>` : ''}
-      ${btn('View order', `${APP_URL}/orders/outbound`)}`)
+    subject: isStaff
+      ? `Inbound order ${orderNumber} marked received`
+      : `Your shipment ${orderNumber} has arrived`,
+    html: baseLayout(
+      isStaff ? 'Inbound shipment received' : 'Shipment arrived at warehouse',
+      isStaff
+        ? `${p(`Inbound order <strong>${orderNumber}</strong> for <strong>${customerName}</strong> has been marked as received and is awaiting put-away.`)}${btn('View order', `${APP_URL}/orders/inbound`)}`
+        : `${p(`Your inbound shipment <strong>${orderNumber}</strong> has arrived at the warehouse and is being processed.`)}${btn('View order', `${APP_URL}/orders/inbound`)}`
+    )
   })
 }
+
+export async function sendInboundPutAway(to: string, orderNumber: string, customerName?: string) {
+  const isStaff = !!customerName
+  await resend.emails.send({
+    from: FROM, to,
+    subject: isStaff
+      ? `Inbound order ${orderNumber} put away`
+      : `Your shipment ${orderNumber} has been put away`,
+    html: baseLayout(
+      isStaff ? 'Inbound order put away' : 'Shipment received & put away',
+      isStaff
+        ? `${p(`Inbound order <strong>${orderNumber}</strong> for <strong>${customerName}</strong> has been put away. Inventory has been updated.`)}${btn('View order', `${APP_URL}/orders/inbound`)}`
+        : `${p(`Your inbound order <strong>${orderNumber}</strong> has been received and put away. Your inventory has been updated.`)}${btn('View inventory', `${APP_URL}/inventory`)}`
+    )
+  })
+}
+
+// ── Outbound ─────────────────────────────────────────────────────────────────
+
+export async function sendOutboundSubmitted(to: string, orderNumber: string, customerName?: string) {
+  const isStaff = !!customerName
+  await resend.emails.send({
+    from: FROM, to,
+    subject: isStaff
+      ? `New outbound order ${orderNumber} — ${customerName}`
+      : `Outbound order ${orderNumber} submitted`,
+    html: baseLayout(
+      isStaff ? 'New outbound order received' : 'Order submitted',
+      isStaff
+        ? `${p(`Customer <strong>${customerName}</strong> has submitted outbound order <strong>${orderNumber}</strong> and is awaiting fulfillment.`)}${btn('View order', `${APP_URL}/orders/outbound`)}`
+        : `${p(`Your outbound order <strong>${orderNumber}</strong> has been submitted. The warehouse will begin processing it shortly.`)}${btn('View order', `${APP_URL}/orders/outbound`)}`
+    )
+  })
+}
+
+export async function sendOutboundPicked(to: string, orderNumber: string, customerName?: string) {
+  const isStaff = !!customerName
+  await resend.emails.send({
+    from: FROM, to,
+    subject: isStaff
+      ? `Outbound order ${orderNumber} picked`
+      : `Your order ${orderNumber} is being picked`,
+    html: baseLayout(
+      isStaff ? 'Outbound order picked' : 'Order being picked',
+      isStaff
+        ? `${p(`Outbound order <strong>${orderNumber}</strong> for <strong>${customerName}</strong> has been picked.`)}${btn('View order', `${APP_URL}/orders/outbound`)}`
+        : `${p(`Your outbound order <strong>${orderNumber}</strong> is currently being picked at the warehouse.`)}${btn('View order', `${APP_URL}/orders/outbound`)}`
+    )
+  })
+}
+
+export async function sendOutboundPacked(to: string, orderNumber: string, customerName?: string) {
+  const isStaff = !!customerName
+  await resend.emails.send({
+    from: FROM, to,
+    subject: isStaff
+      ? `Outbound order ${orderNumber} packed`
+      : `Your order ${orderNumber} has been packed`,
+    html: baseLayout(
+      isStaff ? 'Outbound order packed' : 'Order packed & ready to ship',
+      isStaff
+        ? `${p(`Outbound order <strong>${orderNumber}</strong> for <strong>${customerName}</strong> has been packed and is ready to ship.`)}${btn('View order', `${APP_URL}/orders/outbound`)}`
+        : `${p(`Your outbound order <strong>${orderNumber}</strong> has been packed and is ready for shipment.`)}${btn('View order', `${APP_URL}/orders/outbound`)}`
+    )
+  })
+}
+
+export async function sendOutboundShipped(to: string, orderNumber: string, tracking?: string, customerName?: string) {
+  const isStaff = !!customerName
+  await resend.emails.send({
+    from: FROM, to,
+    subject: isStaff
+      ? `Outbound order ${orderNumber} shipped`
+      : `Your order ${orderNumber} has been shipped`,
+    html: baseLayout(
+      isStaff ? 'Outbound order shipped' : 'Order shipped',
+      isStaff
+        ? `${p(`Outbound order <strong>${orderNumber}</strong> for <strong>${customerName}</strong> has been dispatched.`)}${tracking ? p(`Tracking: <strong>${tracking}</strong>`) : ''}${btn('View order', `${APP_URL}/orders/outbound`)}`
+        : `${p(`Your outbound order <strong>${orderNumber}</strong> has been dispatched.`)}${tracking ? p(`Tracking: <strong>${tracking}</strong>`) : ''}${btn('View order', `${APP_URL}/orders/outbound`)}`
+    )
+  })
+}
+
+// ── Cancellation ─────────────────────────────────────────────────────────────
+
+export async function sendOrderCancelled(to: string, orderNumber: string, orderType: string, customerName?: string) {
+  const isStaff = !!customerName
+  const typeLabel = orderType === 'inbound' ? 'inbound' : 'outbound'
+  await resend.emails.send({
+    from: FROM, to,
+    subject: isStaff
+      ? `Order ${orderNumber} cancelled`
+      : `Your ${typeLabel} order ${orderNumber} has been cancelled`,
+    html: baseLayout(
+      'Order cancelled',
+      isStaff
+        ? `${p(`${typeLabel.charAt(0).toUpperCase() + typeLabel.slice(1)} order <strong>${orderNumber}</strong> for <strong>${customerName}</strong> has been cancelled.`)}${btn('View orders', `${APP_URL}/orders/${typeLabel}`)}`
+        : `${p(`Your ${typeLabel} order <strong>${orderNumber}</strong> has been cancelled.`)}${p('If you have any questions, please contact the warehouse.')}${btn('View orders', `${APP_URL}/orders/${typeLabel}`)}`
+    )
+  })
+}
+
+// ── Documents & Trials ───────────────────────────────────────────────────────
 
 export async function sendDocumentUploaded(to: string, orderNumber: string, filename: string) {
   await resend.emails.send({
     from: FROM, to,
     subject: `Document uploaded to order ${orderNumber}`,
     html: baseLayout('New document attached',
-      `<p style="color:#475569;font-size:14px;line-height:1.6">A document <strong>${filename}</strong> has been uploaded to order <strong>${orderNumber}</strong>.</p>
+      `${p(`A document <strong>${filename}</strong> has been uploaded to order <strong>${orderNumber}</strong>.`)}
       ${btn('View documents', `${APP_URL}/documents`)}`)
   })
 }
@@ -72,7 +186,7 @@ export async function sendTrialReminder(to: string, name: string, daysLeft: numb
     from: FROM, to,
     subject: `Your WMS trial expires in ${daysLeft} day${daysLeft !== 1 ? 's' : ''}`,
     html: baseLayout('Your trial is ending soon',
-      `<p style="color:#475569;font-size:14px;line-height:1.6">Hi ${name}, your WMS Portal trial expires in <strong>${daysLeft} day${daysLeft !== 1 ? 's' : ''}</strong>. Contact us to continue using the platform.</p>
+      `${p(`Hi ${name}, your WMS Portal trial expires in <strong>${daysLeft} day${daysLeft !== 1 ? 's' : ''}</strong>. Contact us to continue using the platform.`)}
       ${btn('Go to portal', APP_URL)}`)
   })
 }
@@ -82,7 +196,7 @@ export async function sendNewTrialSignup(to: string, companyName: string, email:
     from: FROM, to,
     subject: `New trial signup — ${companyName}`,
     html: baseLayout('New trial account created',
-      `<p style="color:#475569;font-size:14px;line-height:1.6"><strong>${companyName}</strong> (${email}) has signed up for a 14-day trial.</p>
+      `${p(`<strong>${companyName}</strong> (${email}) has signed up for a 14-day trial.`)}
       ${btn('View in admin', `${APP_URL}/admin/customers`)}`)
   })
 }

@@ -72,16 +72,24 @@ export default function EditOutboundOrderPage() {
       )
 
       const customerId = ord.customer_id
-      const [{ data: skuData }, { data: consData }] = await Promise.all([
-        supabase.from('skus').select('id, sku_code, description, unit, quantity')
-          .eq('customer_id', customerId).order('sku_code'),
+      const [{ data: levelData }, { data: consData }] = await Promise.all([
+        supabase.from('inventory_levels')
+          .select('sku_id, quantity_available')
+          .eq('customer_id', customerId),
         supabase.from('consignees').select('id, company_name, consignee_addresses(*)')
           .eq('customer_id', customerId).order('company_name'),
       ])
-      setSkus((skuData ?? []).map((s: any) => ({
-        id: s.id, sku_code: s.sku_code, description: s.description,
-        unit: s.unit, quantity_available: s.quantity ?? 0,
-      })))
+      if (levelData && levelData.length > 0) {
+        const skuIds = levelData.map((l: any) => l.sku_id)
+        const { data: skuRows } = await supabase
+          .from('skus').select('id, sku_code, description, unit')
+          .in('id', skuIds).order('sku_code')
+        const levelMap = Object.fromEntries(levelData.map((l: any) => [l.sku_id, l.quantity_available]))
+        setSkus((skuRows ?? []).map((s: any) => ({
+          id: s.id, sku_code: s.sku_code, description: s.description,
+          unit: s.unit, quantity_available: levelMap[s.id] ?? 0,
+        })))
+      }
       setConsignees(consData ?? [])
       setInitialLoading(false)
     }

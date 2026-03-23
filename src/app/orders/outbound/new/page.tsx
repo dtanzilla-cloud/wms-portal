@@ -56,16 +56,27 @@ export default function NewOutboundOrderPage() {
 
   // When customer changes, reload SKUs and consignees
   useEffect(() => {
-    if (!effectiveCustomerId) { setSkus([]); setConsignees([]); setConsigneeId(''); return }
+    if (!effectiveCustomerId) {
+      console.log('[WMS] effectiveCustomerId is empty, profile:', profile)
+      setSkus([]); setConsignees([]); setConsigneeId(''); return
+    }
+    console.log('[WMS] loading SKUs for customer:', effectiveCustomerId)
     Promise.all([
-      supabase.from('skus').select('id, sku_code, description, unit, quantity')
-        .eq('customer_id', effectiveCustomerId).gt('quantity', 0).order('sku_code'),
+      supabase.from('skus')
+        .select('id, sku_code, description, unit')
+        .eq('customer_id', effectiveCustomerId)
+        .order('sku_code'),
+      supabase.from('inventory_levels')
+        .select('sku_id, quantity_available')
+        .eq('customer_id', effectiveCustomerId),
       supabase.from('consignees').select('id, company_name, consignee_addresses(*)')
         .eq('customer_id', effectiveCustomerId).order('company_name'),
-    ]).then(([{ data: skuData }, { data: consData }]) => {
+    ]).then(([{ data: skuData, error: skuErr }, { data: levelData }, { data: consData }]) => {
+      console.log('[WMS] skus result:', skuData, 'error:', skuErr)
+      const levelMap = Object.fromEntries((levelData ?? []).map((l: any) => [l.sku_id, l.quantity_available]))
       setSkus((skuData ?? []).map((s: any) => ({
         id: s.id, sku_code: s.sku_code, description: s.description,
-        unit: s.unit, quantity_available: s.quantity ?? 0,
+        unit: s.unit, quantity_available: levelMap[s.id] ?? 0,
       })))
       setConsignees(consData ?? [])
       setConsigneeId(''); setConsigneeAddressId('')
@@ -222,8 +233,15 @@ export default function NewOutboundOrderPage() {
           {isStaff && !selectedCustomerId && (
             <p className="text-xs text-gray-400 mb-2">Select a customer above to load available inventory</p>
           )}
+          {!isStaff && profile && !profile.customer_id && (
+            <p className="text-xs text-red-600 bg-red-50 px-3 py-2 rounded mb-3">
+              Your account is not linked to a customer. Please contact warehouse staff to link your account.
+            </p>
+          )}
           {effectiveCustomerId && skus.length === 0 && (
-            <p className="text-xs text-amber-600 bg-amber-50 px-3 py-2 rounded mb-3">No inventory available for this customer yet.</p>
+            <p className="text-xs text-amber-600 bg-amber-50 px-3 py-2 rounded mb-3">
+              No SKUs found for this customer. SKUs must be added to inventory before creating an outbound order.
+            </p>
           )}
           <div className="space-y-3">
             {items.map((item, i) => {

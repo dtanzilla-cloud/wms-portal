@@ -53,6 +53,14 @@ export default function OrderStatusActions({ order, type }: Props) {
   const nextLbl = nextLabelMap[order.status]
   const canCancel = !['shipped', 'put_away', 'cancelled'].includes(order.status)
 
+  function notify(type: string) {
+    fetch('/api/notifications', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ type, order_id: order.id }),
+    })
+  }
+
   async function advance() {
     if (!next) return
     setLoading(true)
@@ -63,7 +71,7 @@ export default function OrderStatusActions({ order, type }: Props) {
     }
     await supabase.from('orders').update(updates).eq('id', order.id)
 
-    // If put_away for inbound, add inventory movement
+    // If put_away for inbound, add inventory movements
     if (next === 'put_away' && type === 'inbound') {
       const { data: items } = await supabase.from('order_items').select('*').eq('order_id', order.id)
       if (items) {
@@ -77,9 +85,6 @@ export default function OrderStatusActions({ order, type }: Props) {
           }))
         )
       }
-      // Notify customer
-      fetch('/api/notifications', { method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ type: 'inbound_put_away', order_id: order.id }) })
     }
 
     // If shipped for outbound, add inventory deduction
@@ -96,16 +101,18 @@ export default function OrderStatusActions({ order, type }: Props) {
           }))
         )
       }
-      // Notify customer
-      fetch('/api/notifications', { method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ type: 'outbound_shipped', order_id: order.id }) })
     }
 
-    // Notify staff when submitted
-    if (next === 'submitted') {
-      fetch('/api/notifications', { method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ type: `${type}_submitted`, order_id: order.id }) })
+    // Fire notification for every status transition
+    const notifyType: Record<string, string> = {
+      submitted: `${type}_submitted`,
+      received: 'inbound_received',
+      put_away: 'inbound_put_away',
+      picked: 'outbound_picked',
+      packed: 'outbound_packed',
+      shipped: 'outbound_shipped',
     }
+    if (notifyType[next]) notify(notifyType[next])
 
     router.refresh()
     setLoading(false)
@@ -115,6 +122,7 @@ export default function OrderStatusActions({ order, type }: Props) {
     if (!confirm('Cancel this order?')) return
     setLoading(true)
     await supabase.from('orders').update({ status: 'cancelled' }).eq('id', order.id)
+    notify('order_cancelled')
     router.refresh()
     setLoading(false)
   }

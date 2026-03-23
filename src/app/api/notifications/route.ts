@@ -2,8 +2,14 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import {
   sendInboundSubmitted,
+  sendInboundSubmittedCustomer,
+  sendInboundReceived,
   sendInboundPutAway,
+  sendOutboundSubmitted,
+  sendOutboundPicked,
+  sendOutboundPacked,
   sendOutboundShipped,
+  sendOrderCancelled,
   sendDocumentUploaded,
 } from '@/lib/notifications'
 
@@ -26,16 +32,52 @@ export async function POST(req: NextRequest) {
 
       const staffEmail = process.env.STAFF_NOTIFICATION_EMAIL || process.env.NEXT_PUBLIC_STAFF_EMAIL
       const customerEmail = order.customers?.billing_email
+      const customerName = order.customers?.name ?? ''
+      const orderNumber = order.order_number
 
-      if (type === 'inbound_submitted' && staffEmail) {
-        await sendInboundSubmitted(staffEmail, order.order_number, order.customers?.name ?? '')
+      const sends: Promise<any>[] = []
+
+      if (type === 'inbound_submitted') {
+        if (staffEmail) sends.push(sendInboundSubmitted(staffEmail, orderNumber, customerName))
+        if (customerEmail) sends.push(sendInboundSubmittedCustomer(customerEmail, orderNumber))
       }
-      if (type === 'inbound_put_away' && customerEmail) {
-        await sendInboundPutAway(customerEmail, order.order_number)
+
+      if (type === 'inbound_received') {
+        if (customerEmail) sends.push(sendInboundReceived(customerEmail, orderNumber))
+        if (staffEmail) sends.push(sendInboundReceived(staffEmail, orderNumber, customerName))
       }
-      if (type === 'outbound_shipped' && customerEmail) {
-        await sendOutboundShipped(customerEmail, order.order_number, order.tracking_number ?? undefined)
+
+      if (type === 'inbound_put_away') {
+        if (customerEmail) sends.push(sendInboundPutAway(customerEmail, orderNumber))
+        if (staffEmail) sends.push(sendInboundPutAway(staffEmail, orderNumber, customerName))
       }
+
+      if (type === 'outbound_submitted') {
+        if (staffEmail) sends.push(sendOutboundSubmitted(staffEmail, orderNumber, customerName))
+        if (customerEmail) sends.push(sendOutboundSubmitted(customerEmail, orderNumber))
+      }
+
+      if (type === 'outbound_picked') {
+        if (customerEmail) sends.push(sendOutboundPicked(customerEmail, orderNumber))
+        if (staffEmail) sends.push(sendOutboundPicked(staffEmail, orderNumber, customerName))
+      }
+
+      if (type === 'outbound_packed') {
+        if (customerEmail) sends.push(sendOutboundPacked(customerEmail, orderNumber))
+        if (staffEmail) sends.push(sendOutboundPacked(staffEmail, orderNumber, customerName))
+      }
+
+      if (type === 'outbound_shipped') {
+        if (customerEmail) sends.push(sendOutboundShipped(customerEmail, orderNumber, order.tracking_number ?? undefined))
+        if (staffEmail) sends.push(sendOutboundShipped(staffEmail, orderNumber, order.tracking_number ?? undefined, customerName))
+      }
+
+      if (type === 'order_cancelled') {
+        if (customerEmail) sends.push(sendOrderCancelled(customerEmail, orderNumber, order.order_type))
+        if (staffEmail) sends.push(sendOrderCancelled(staffEmail, orderNumber, order.order_type, customerName))
+      }
+
+      await Promise.allSettled(sends)
     }
 
     if (document_id) {
