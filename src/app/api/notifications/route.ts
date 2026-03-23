@@ -44,7 +44,16 @@ export async function POST(req: NextRequest) {
         ? adminEmails
         : staffEmail ? [staffEmail] : []
 
-      const customerEmail = order.customers?.billing_email
+      // Get all login emails for users linked to this customer
+      const { data: customerProfiles } = await supabase
+        .from('profiles')
+        .select('email')
+        .eq('customer_id', order.customer_id)
+      const customerEmails = (customerProfiles ?? []).map((p: any) => p.email).filter(Boolean)
+      // Fall back to billing_email if no profiles found
+      const customerEmail = customerEmails.length > 0
+        ? customerEmails[0]
+        : order.customers?.billing_email
       const customerName = order.customers?.name ?? ''
       const orderNumber = order.order_number
 
@@ -52,46 +61,46 @@ export async function POST(req: NextRequest) {
 
       if (type === 'inbound_submitted') {
         staffEmails.forEach(e => sends.push(sendInboundSubmitted(e, orderNumber, customerName)))
-        if (customerEmail) sends.push(sendInboundSubmittedCustomer(customerEmail, orderNumber))
+        customerEmails.forEach(e => sends.push(sendInboundSubmittedCustomer(e, orderNumber)))
       }
 
       if (type === 'inbound_received') {
-        if (customerEmail) sends.push(sendInboundReceived(customerEmail, orderNumber))
+        customerEmails.forEach(e => sends.push(sendInboundReceived(e, orderNumber)))
         staffEmails.forEach(e => sends.push(sendInboundReceived(e, orderNumber, customerName)))
       }
 
       if (type === 'inbound_put_away') {
-        if (customerEmail) sends.push(sendInboundPutAway(customerEmail, orderNumber))
+        customerEmails.forEach(e => sends.push(sendInboundPutAway(e, orderNumber)))
         staffEmails.forEach(e => sends.push(sendInboundPutAway(e, orderNumber, customerName)))
       }
 
       if (type === 'outbound_submitted') {
         staffEmails.forEach(e => sends.push(sendOutboundSubmitted(e, orderNumber, customerName)))
-        if (customerEmail) sends.push(sendOutboundSubmitted(customerEmail, orderNumber))
+        customerEmails.forEach(e => sends.push(sendOutboundSubmitted(e, orderNumber)))
       }
 
       if (type === 'outbound_picked') {
-        if (customerEmail) sends.push(sendOutboundPicked(customerEmail, orderNumber))
+        customerEmails.forEach(e => sends.push(sendOutboundPicked(e, orderNumber)))
         staffEmails.forEach(e => sends.push(sendOutboundPicked(e, orderNumber, customerName)))
       }
 
       if (type === 'outbound_packed') {
-        if (customerEmail) sends.push(sendOutboundPacked(customerEmail, orderNumber))
+        customerEmails.forEach(e => sends.push(sendOutboundPacked(e, orderNumber)))
         staffEmails.forEach(e => sends.push(sendOutboundPacked(e, orderNumber, customerName)))
       }
 
       if (type === 'outbound_shipped') {
-        if (customerEmail) sends.push(sendOutboundShipped(customerEmail, orderNumber, order.tracking_number ?? undefined))
+        customerEmails.forEach(e => sends.push(sendOutboundShipped(e, orderNumber, order.tracking_number ?? undefined)))
         staffEmails.forEach(e => sends.push(sendOutboundShipped(e, orderNumber, order.tracking_number ?? undefined, customerName)))
       }
 
       if (type === 'order_updated') {
-        if (customerEmail) sends.push(sendOrderUpdated(customerEmail, orderNumber, order.order_type))
+        customerEmails.forEach(e => sends.push(sendOrderUpdated(e, orderNumber, order.order_type)))
         staffEmails.forEach(e => sends.push(sendOrderUpdated(e, orderNumber, order.order_type, customerName)))
       }
 
       if (type === 'order_cancelled') {
-        if (customerEmail) sends.push(sendOrderCancelled(customerEmail, orderNumber, order.order_type))
+        customerEmails.forEach(e => sends.push(sendOrderCancelled(e, orderNumber, order.order_type)))
         staffEmails.forEach(e => sends.push(sendOrderCancelled(e, orderNumber, order.order_type, customerName)))
       }
 
@@ -101,7 +110,7 @@ export async function POST(req: NextRequest) {
         order_id,
         orderNumber,
         staffEmails,
-        customerEmail: customerEmail ?? null,
+        customerEmails,
         sendsQueued: sends.length,
         results: results.map((r, i) =>
           r.status === 'fulfilled'
