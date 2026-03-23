@@ -89,6 +89,7 @@ export default function EditSKUPage({ params }: { params: { id: string } }) {
         if (mvErr) throw mvErr
       }
 
+      router.refresh()
       router.push('/inventory')
     } catch (e: any) {
       setError(e.message)
