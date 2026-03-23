@@ -100,6 +100,7 @@ export default async function OutboundOrderDetailPage({ params }: { params: { id
                   <th className="px-5 py-3 text-left text-xs font-medium text-gray-500">Description</th>
                   <th className="px-5 py-3 text-right text-xs font-medium text-gray-500">Qty</th>
                   <th className="px-5 py-3 text-right text-xs font-medium text-gray-500">Unit</th>
+                  <th className="px-5 py-3 text-left text-xs font-medium text-gray-500">Lot #</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-50">
@@ -109,6 +110,7 @@ export default async function OutboundOrderDetailPage({ params }: { params: { id
                     <td className="px-5 py-3 text-gray-700">{item.skus?.description}</td>
                     <td className="px-5 py-3 text-right text-gray-800 font-medium">{item.quantity}</td>
                     <td className="px-5 py-3 text-right text-gray-500">{item.skus?.unit}</td>
+                    <td className="px-5 py-3 text-gray-600 font-mono text-xs">{item.lot_number ?? '—'}</td>
                   </tr>
                 ))}
               </tbody>

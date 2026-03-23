@@ -93,6 +93,7 @@ export default async function InboundOrderDetailPage({ params }: { params: { id:
                   <th className="px-5 py-3 text-right text-xs font-medium text-gray-500">Qty</th>
                   <th className="px-5 py-3 text-right text-xs font-medium text-gray-500">Cartons</th>
                   <th className="px-5 py-3 text-right text-xs font-medium text-gray-500">Units/ctn</th>
+                  <th className="px-5 py-3 text-left text-xs font-medium text-gray-500">Lot #</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-50">
@@ -103,6 +104,7 @@ export default async function InboundOrderDetailPage({ params }: { params: { id:
                     <td className="px-5 py-3 text-right text-gray-800 font-medium">{item.quantity}</td>
                     <td className="px-5 py-3 text-right text-gray-600">{item.carton_count ?? '—'}</td>
                     <td className="px-5 py-3 text-right text-gray-600">{item.units_per_carton ?? '—'}</td>
+                    <td className="px-5 py-3 text-gray-600 font-mono text-xs">{item.lot_number ?? '—'}</td>
                   </tr>
                 ))}
               </tbody>

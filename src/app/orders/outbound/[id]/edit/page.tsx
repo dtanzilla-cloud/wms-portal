@@ -7,7 +7,7 @@ import { ArrowLeft, Plus, Trash2 } from 'lucide-react'
 
 interface SKUOption { id: string; sku_code: string; description: string; unit: string; quantity_available: number }
 interface ConsigneeOption { id: string; company_name: string; consignee_addresses: any[] }
-interface ItemRow { sku_id: string; quantity: number }
+interface ItemRow { sku_id: string; quantity: number; lot_number: string }
 
 const REF_TYPES = [
   { value: '', label: 'None' },
@@ -38,7 +38,7 @@ export default function EditOutboundOrderPage() {
   const [deliveryInstructions, setDeliveryInstructions] = useState('')
   const [referenceType, setReferenceType] = useState('')
   const [referenceNumber, setReferenceNumber] = useState('')
-  const [items, setItems] = useState<ItemRow[]>([{ sku_id: '', quantity: 1 }])
+  const [items, setItems] = useState<ItemRow[]>([{ sku_id: '', quantity: 1, lot_number: '' }])
 
   const selectedConsignee = consignees.find(c => c.id === consigneeId)
 
@@ -50,7 +50,7 @@ export default function EditOutboundOrderPage() {
 
       const { data: ord } = await supabase
         .from('orders')
-        .select('*, order_items(sku_id, quantity)')
+        .select('*, order_items(sku_id, quantity, lot_number)')
         .eq('id', orderId)
         .single()
 
@@ -67,8 +67,8 @@ export default function EditOutboundOrderPage() {
       setReferenceType(ord.reference_type ?? '')
       setReferenceNumber(ord.reference_number ?? '')
       setItems(ord.order_items?.length > 0
-        ? ord.order_items.map((i: any) => ({ sku_id: i.sku_id, quantity: i.quantity }))
-        : [{ sku_id: '', quantity: 1 }]
+        ? ord.order_items.map((i: any) => ({ sku_id: i.sku_id, quantity: i.quantity, lot_number: i.lot_number ?? '' }))
+        : [{ sku_id: '', quantity: 1, lot_number: '' }]
       )
 
       const customerId = ord.customer_id
@@ -88,7 +88,7 @@ export default function EditOutboundOrderPage() {
     load()
   }, [orderId])
 
-  function addItem() { setItems([...items, { sku_id: '', quantity: 1 }]) }
+  function addItem() { setItems([...items, { sku_id: '', quantity: 1, lot_number: '' }]) }
   function removeItem(i: number) { setItems(items.filter((_, idx) => idx !== i)) }
   function updateItem(i: number, field: keyof ItemRow, value: string | number) {
     setItems(items.map((item, idx) => idx === i ? { ...item, [field]: value } : item))
@@ -121,7 +121,7 @@ export default function EditOutboundOrderPage() {
       if (delErr) throw delErr
 
       const { error: insErr } = await supabase.from('order_items').insert(
-        validItems.map(it => ({ order_id: orderId, sku_id: it.sku_id, quantity: Number(it.quantity) }))
+        validItems.map(it => ({ order_id: orderId, sku_id: it.sku_id, quantity: Number(it.quantity), lot_number: it.lot_number || null }))
       )
       if (insErr) throw insErr
 
@@ -223,7 +223,7 @@ export default function EditOutboundOrderPage() {
               const sku = skus.find(s => s.id === item.sku_id)
               return (
                 <div key={i} className="grid grid-cols-12 gap-2 items-end">
-                  <div className="col-span-8">
+                  <div className="col-span-6">
                     {i === 0 && <label className="block text-xs font-medium text-gray-500 mb-1">SKU <span className="text-red-500">*</span></label>}
                     <select value={item.sku_id} onChange={e => updateItem(i, 'sku_id', e.target.value)} required
                       className="w-full px-2 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
@@ -233,7 +233,7 @@ export default function EditOutboundOrderPage() {
                       ))}
                     </select>
                   </div>
-                  <div className="col-span-3">
+                  <div className="col-span-2">
                     {i === 0 && (
                       <label className="block text-xs font-medium text-gray-500 mb-1">
                         Qty {sku && <span className="text-gray-400">/ {sku.quantity_available}</span>}
@@ -241,6 +241,12 @@ export default function EditOutboundOrderPage() {
                     )}
                     <input type="number" min="1" required value={item.quantity}
                       onChange={e => updateItem(i, 'quantity', e.target.value)}
+                      className="w-full px-2 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                  </div>
+                  <div className="col-span-3">
+                    {i === 0 && <label className="block text-xs font-medium text-gray-500 mb-1">Lot #</label>}
+                    <input type="text" value={item.lot_number} onChange={e => updateItem(i, 'lot_number', e.target.value)}
+                      placeholder="e.g. LOT-001"
                       className="w-full px-2 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
                   </div>
                   <div className="col-span-1 flex justify-end">
