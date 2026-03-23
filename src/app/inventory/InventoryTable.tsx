@@ -1,9 +1,7 @@
 'use client'
 import { useState, useMemo } from 'react'
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
-import { createClient } from '@/lib/supabase/client'
-import { Trash2, AlertCircle, ChevronUp, ChevronDown, ChevronsUpDown } from 'lucide-react'
+import { ChevronUp, ChevronDown, ChevronsUpDown } from 'lucide-react'
 
 interface InventoryRow {
   sku_id: string
@@ -33,11 +31,6 @@ function SortIcon({ col, sortKey, sortDir }: { col: SortKey; sortKey: SortKey; s
 }
 
 export default function InventoryTable({ rows }: { rows: InventoryRow[] }) {
-  const supabase = createClient()
-  const router = useRouter()
-  const [selected, setSelected] = useState<Set<string>>(new Set())
-  const [deleting, setDeleting] = useState(false)
-  const [error, setError] = useState('')
   const [sortKey, setSortKey] = useState<SortKey>('sku_code')
   const [sortDir, setSortDir] = useState<SortDir>('asc')
 
@@ -69,43 +62,6 @@ export default function InventoryTable({ rows }: { rows: InventoryRow[] }) {
     })
   }, [rows, sortKey, sortDir])
 
-  const allChecked = rows.length > 0 && selected.size === rows.length
-  const someChecked = selected.size > 0 && selected.size < rows.length
-
-  function toggleAll() {
-    setSelected(allChecked ? new Set() : new Set(rows.map(r => r.sku_id)))
-  }
-
-  function toggleOne(id: string) {
-    setSelected(prev => {
-      const next = new Set(prev)
-      next.has(id) ? next.delete(id) : next.add(id)
-      return next
-    })
-  }
-
-  async function deleteSkus(ids: string[]) {
-    setDeleting(true)
-    setError('')
-    try {
-      const { error: mvErr } = await supabase.from('inventory_movements').delete().in('sku_id', ids)
-      if (mvErr) throw mvErr
-      const { error: skuErr } = await supabase.from('skus').delete().in('id', ids)
-      if (skuErr) throw skuErr
-      setSelected(new Set())
-      router.refresh()
-    } catch (e: any) {
-      setError(e.message)
-    } finally {
-      setDeleting(false)
-    }
-  }
-
-  async function handleDeleteSelected() {
-    if (!confirm(`Delete ${selected.size} SKU${selected.size !== 1 ? 's' : ''} and all their inventory history? This cannot be undone.`)) return
-    await deleteSkus(Array.from(selected))
-  }
-
   function Th({ col, label, right }: { col: SortKey; label: string; right?: boolean }) {
     return (
       <th
@@ -118,90 +74,52 @@ export default function InventoryTable({ rows }: { rows: InventoryRow[] }) {
   }
 
   return (
-    <div>
-      {selected.size > 0 && (
-        <div className="px-5 py-2.5 bg-blue-50 border-b border-blue-100 flex items-center justify-between">
-          <span className="text-sm text-blue-700 font-medium">{selected.size} selected</span>
-          <button
-            onClick={handleDeleteSelected}
-            disabled={deleting}
-            className="flex items-center gap-1.5 text-sm text-red-600 hover:text-red-800 font-medium disabled:opacity-50"
-          >
-            <Trash2 size={13} /> {deleting ? 'Deleting…' : 'Delete selected'}
-          </button>
-        </div>
-      )}
-
-      {error && (
-        <div className="px-5 py-2 bg-red-50 border-b border-red-100 flex items-center gap-2 text-xs text-red-600">
-          <AlertCircle size={12} /> {error}
-        </div>
-      )}
-
-      <div className="overflow-x-auto">
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="bg-gray-50 border-b border-gray-100">
-              <th className="px-4 py-3 w-8">
-                <input
-                  type="checkbox"
-                  checked={allChecked}
-                  ref={el => { if (el) el.indeterminate = someChecked }}
-                  onChange={toggleAll}
-                  className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                />
-              </th>
-              <Th col="sku_code" label="SKU" />
-              <Th col="description" label="Description" />
-              <Th col="lot_number" label="Lot #" />
-              <Th col="inbound_date" label="Inbound date" />
-              <Th col="on_hand" label="On hand" right />
-              <Th col="reserved" label="Reserved" right />
-              <Th col="available" label="Available" right />
-              <Th col="storage_unit" label="Storage unit" right />
+    <div className="overflow-x-auto">
+      <table className="w-full text-sm">
+        <thead>
+          <tr className="bg-gray-50 border-b border-gray-100">
+            <Th col="sku_code" label="SKU" />
+            <Th col="description" label="Description" />
+            <Th col="lot_number" label="Lot #" />
+            <Th col="inbound_date" label="Inbound date" />
+            <Th col="on_hand" label="On hand" right />
+            <Th col="reserved" label="Reserved" right />
+            <Th col="available" label="Available" right />
+            <Th col="storage_unit" label="Storage unit" right />
+          </tr>
+        </thead>
+        <tbody className="divide-y divide-gray-50">
+          {sorted.length === 0 && (
+            <tr>
+              <td colSpan={8} className="px-5 py-8 text-center text-gray-400 text-xs">No inventory yet</td>
             </tr>
-          </thead>
-          <tbody className="divide-y divide-gray-50">
-            {sorted.length === 0 && (
-              <tr>
-                <td colSpan={9} className="px-5 py-8 text-center text-gray-400 text-xs">No inventory yet</td>
-              </tr>
-            )}
-            {sorted.map(row => (
-              <tr key={row.sku_id} className={`hover:bg-gray-50 ${selected.has(row.sku_id) ? 'bg-blue-50' : ''}`}>
-                <td className="px-4 py-3">
-                  <input
-                    type="checkbox"
-                    checked={selected.has(row.sku_id)}
-                    onChange={() => toggleOne(row.sku_id)}
-                    className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                  />
-                </td>
-                <td className="px-5 py-3 font-mono text-xs">
-                  <Link href={`/inventory/skus/${row.sku_id}`} className="text-blue-700 hover:underline">
-                    {row.skus?.sku_code}
-                  </Link>
-                </td>
-                <td className="px-5 py-3 text-gray-700">{row.skus?.description}</td>
-                <td className="px-5 py-3 text-gray-500 font-mono text-xs">{row.skus?.lot_number ?? '—'}</td>
-                <td className="px-5 py-3 text-gray-500 text-xs">
-                  {row.skus?.inbound_date
-                    ? new Date(row.skus.inbound_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
-                    : '—'}
-                </td>
-                <td className="px-5 py-3 text-right text-gray-700">{row.quantity_on_hand}</td>
-                <td className="px-5 py-3 text-right text-amber-600">{row.quantity_reserved}</td>
-                <td className={`px-5 py-3 text-right font-medium ${row.quantity_available <= 0 ? 'text-red-600' : 'text-green-700'}`}>
-                  {row.quantity_available}
-                </td>
-                <td className="px-5 py-3 text-right text-gray-500">
-                  {row.skus?.storage_unit ?? '—'}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+          )}
+          {sorted.map(row => (
+            <tr key={row.sku_id} className="hover:bg-gray-50">
+              <td className="px-5 py-3 font-mono text-xs">
+                <Link href={`/inventory/skus/${row.sku_id}`} className="text-blue-700 hover:underline">
+                  {row.skus?.sku_code}
+                </Link>
+              </td>
+              <td className="px-5 py-3 text-gray-700">{row.skus?.description}</td>
+              <td className="px-5 py-3 text-gray-500 font-mono text-xs">{row.skus?.lot_number ?? '—'}</td>
+              <td className="px-5 py-3 text-gray-500 text-xs">
+                {row.skus?.inbound_date
+                  ? new Date(row.skus.inbound_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+                  : '—'}
+              </td>
+              <td className="px-5 py-3 text-right text-gray-700">{row.quantity_on_hand}</td>
+              <td className="px-5 py-3 text-right text-amber-600">{row.quantity_reserved}</td>
+              <td className={`px-5 py-3 text-right font-medium ${row.quantity_available <= 0 ? 'text-red-600' : 'text-green-700'}`}>
+                {row.quantity_available}
+              </td>
+              <td className="px-5 py-3 text-right text-gray-500">
+                {row.skus?.storage_unit ?? '—'}
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
     </div>
   )
 }
