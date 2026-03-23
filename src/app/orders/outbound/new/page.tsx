@@ -44,7 +44,9 @@ export default function NewOutboundOrderPage() {
   useEffect(() => {
     async function load() {
       const { data: { user } } = await supabase.auth.getUser()
-      const { data: prof } = await supabase.from('profiles').select('*').eq('id', user!.id).single()
+      console.log('[WMS] auth user id:', user?.id)
+      const { data: prof, error: profErr } = await supabase.from('profiles').select('*').eq('id', user!.id).single()
+      console.log('[WMS] profile loaded:', prof, 'error:', profErr)
       setProfile(prof)
       if (prof?.role === 'warehouse_staff' || prof?.role === 'admin') {
         const { data: custs } = await supabase.from('customers').select('id, name').eq('status', 'active').order('name')
