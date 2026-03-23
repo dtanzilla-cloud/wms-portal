@@ -44,9 +44,7 @@ export default function NewOutboundOrderPage() {
   useEffect(() => {
     async function load() {
       const { data: { user } } = await supabase.auth.getUser()
-      console.log('[WMS] auth user id:', user?.id)
-      const { data: prof, error: profErr } = await supabase.from('profiles').select('*').eq('id', user!.id).single()
-      console.log('[WMS] profile loaded:', prof, 'error:', profErr)
+      const { data: prof } = await supabase.from('profiles').select('*').eq('id', user!.id).single()
       setProfile(prof)
       if (prof?.role === 'warehouse_staff' || prof?.role === 'admin') {
         const { data: custs } = await supabase.from('customers').select('id, name').eq('status', 'active').order('name')
@@ -58,11 +56,7 @@ export default function NewOutboundOrderPage() {
 
   // When customer changes, reload SKUs and consignees
   useEffect(() => {
-    if (!effectiveCustomerId) {
-      console.log('[WMS] effectiveCustomerId is empty, profile:', profile)
-      setSkus([]); setConsignees([]); setConsigneeId(''); return
-    }
-    console.log('[WMS] loading SKUs for customer:', effectiveCustomerId)
+    if (!effectiveCustomerId) { setSkus([]); setConsignees([]); setConsigneeId(''); return }
     Promise.all([
       supabase.from('skus')
         .select('id, sku_code, description, unit')
@@ -73,8 +67,7 @@ export default function NewOutboundOrderPage() {
         .eq('customer_id', effectiveCustomerId),
       supabase.from('consignees').select('id, company_name, consignee_addresses(*)')
         .eq('customer_id', effectiveCustomerId).order('company_name'),
-    ]).then(([{ data: skuData, error: skuErr }, { data: levelData }, { data: consData }]) => {
-      console.log('[WMS] skus result:', skuData, 'error:', skuErr)
+    ]).then(([{ data: skuData }, { data: levelData }, { data: consData }]) => {
       const levelMap = Object.fromEntries((levelData ?? []).map((l: any) => [l.sku_id, l.quantity_available]))
       setSkus((skuData ?? []).map((s: any) => ({
         id: s.id, sku_code: s.sku_code, description: s.description,
@@ -124,6 +117,11 @@ export default function NewOutboundOrderPage() {
         order_id: order.id, sku_id: it.sku_id, quantity: Number(it.quantity),
         lot_number: it.lot_number || null,
       })))
+
+      if (!asDraft) {
+        fetch('/api/notifications', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ type: 'outbound_submitted', order_id: order.id }) })
+      }
 
       router.push(`/orders/outbound/${order.id}`)
     } catch (e: any) { setError(e.message); setLoading(false) }
