@@ -1,8 +1,19 @@
 import { Resend } from 'resend'
 
 const resend = new Resend(process.env.RESEND_API_KEY)
-const FROM = `WMS Portal <noreply@${process.env.NEXT_PUBLIC_APP_URL?.replace('https://', '') ?? 'yourdomain.com'}>`
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000'
+
+// Use explicit RESEND_FROM_EMAIL if set, otherwise derive hostname safely from APP_URL
+function getFrom() {
+  if (process.env.RESEND_FROM_EMAIL) return process.env.RESEND_FROM_EMAIL
+  try {
+    const host = new URL(APP_URL.startsWith('http') ? APP_URL : `https://${APP_URL}`).hostname
+    return `WMS Portal <noreply@${host}>`
+  } catch {
+    return `WMS Portal <noreply@yourdomain.com>`
+  }
+}
+const FROM = getFrom()
 
 function baseLayout(title: string, body: string) {
   return `

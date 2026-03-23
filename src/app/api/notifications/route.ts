@@ -83,7 +83,22 @@ export async function POST(req: NextRequest) {
         if (staffEmail) sends.push(sendOrderCancelled(staffEmail, orderNumber, order.order_type, customerName))
       }
 
-      await Promise.allSettled(sends)
+      const results = await Promise.allSettled(sends)
+      const debug = {
+        type,
+        order_id,
+        orderNumber,
+        staffEmail: staffEmail ?? null,
+        customerEmail: customerEmail ?? null,
+        sendsQueued: sends.length,
+        results: results.map((r, i) =>
+          r.status === 'fulfilled'
+            ? { i, ok: true, data: r.value }
+            : { i, ok: false, error: r.reason?.message ?? String(r.reason) }
+        ),
+      }
+      console.log('Notification debug:', JSON.stringify(debug, null, 2))
+      return NextResponse.json({ success: true, debug })
     }
 
     if (document_id) {
@@ -103,8 +118,7 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ success: true })
   } catch (e: any) {
-    // Don't fail the request if email fails
     console.error('Notification error:', e)
-    return NextResponse.json({ success: true })
+    return NextResponse.json({ success: false, error: e?.message ?? String(e) }, { status: 500 })
   }
 }
