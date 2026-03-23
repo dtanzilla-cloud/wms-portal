@@ -22,6 +22,8 @@ export default function NewSKUPage() {
   const [quantity, setQuantity] = useState('')
   const [storageUnit, setStorageUnit] = useState('')
   const [dimensionsCm, setDimensionsCm] = useState('')
+  const [lotNumber, setLotNumber] = useState('')
+  const [inboundDate, setInboundDate] = useState('')
 
   const isStaff = profile?.role === 'warehouse_staff' || profile?.role === 'admin'
 
@@ -54,6 +56,8 @@ export default function NewSKUPage() {
         quantity: qty || null,
         storage_unit: storageUnit ? parseInt(storageUnit) : null,
         dimensions_cm: dimensionsCm || null,
+        lot_number: lotNumber || null,
+        inbound_date: inboundDate || null,
       }).select('id').single()
       if (err) throw err
       if (qty > 0) {
@@ -148,6 +152,23 @@ export default function NewSKUPage() {
             className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
             placeholder="30×20×10"
           />
+        </div>
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <label className="block text-xs font-medium text-gray-600 mb-1">Lot number</label>
+            <input
+              type="text" value={lotNumber} onChange={e => setLotNumber(e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              placeholder="LOT-001"
+            />
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-gray-600 mb-1">Inbound date</label>
+            <input
+              type="date" value={inboundDate} onChange={e => setInboundDate(e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
         </div>
         {error && <p className="text-sm text-red-600 bg-red-50 px-3 py-2 rounded">{error}</p>}
         <div className="flex items-center gap-3 pt-2">

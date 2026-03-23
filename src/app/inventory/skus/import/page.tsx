@@ -12,6 +12,8 @@ interface ParsedRow {
   quantity: string
   storage_unit: string
   dimensions_cm: string
+  lot_number: string
+  inbound_date: string
   valid: boolean
   error?: string
 }
@@ -34,7 +36,7 @@ function parseCSV(text: string): ParsedRow[] {
     }
     cols.push(current.trim())
 
-    const [sku_code, description, unit, quantity, storage_unit, dimensions_cm] = cols
+    const [sku_code, description, unit, quantity, storage_unit, dimensions_cm, lot_number, inbound_date] = cols
     const normalizedUnit = (unit || 'each').toLowerCase().trim()
     const unitValid = !unit || VALID_UNITS.includes(normalizedUnit)
 
@@ -51,13 +53,15 @@ function parseCSV(text: string): ParsedRow[] {
       quantity: quantity ?? '',
       storage_unit: storage_unit ?? '',
       dimensions_cm: dimensions_cm ?? '',
+      lot_number: lot_number ?? '',
+      inbound_date: inbound_date ?? '',
       valid: valid && unitValid,
       error,
     }
   }).filter(r => r.sku_code)
 }
 
-const TEMPLATE_CSV = `sku_code,description,unit,quantity,storage_unit,dimensions_cm\nABC-001,Blue Widget 12oz,each,100,5,30x20x10\nABC-002,Red Drum 55gal,drum,50,10,`
+const TEMPLATE_CSV = `sku_code,description,unit,quantity,storage_unit,dimensions_cm,lot_number,inbound_date\nABC-001,Blue Widget 12oz,each,100,5,30x20x10,LOT-2024-001,2024-01-15\nABC-002,Red Drum 55gal,drum,50,10,,LOT-2024-002,`
 const TEMPLATE_URL = `data:text/csv;charset=utf-8,${encodeURIComponent(TEMPLATE_CSV)}`
 
 export default function ImportSKUsPage() {
@@ -123,6 +127,8 @@ export default function ImportSKUsPage() {
           quantity: qty || null,
           storage_unit: row.storage_unit ? parseInt(row.storage_unit) : null,
           dimensions_cm: row.dimensions_cm || null,
+          lot_number: row.lot_number || null,
+          inbound_date: row.inbound_date || null,
         }
 
         // Check if SKU already exists
@@ -204,7 +210,7 @@ export default function ImportSKUsPage() {
         </div>
         <div className="mt-3 bg-gray-50 rounded-md p-3 overflow-x-auto">
           <p className="text-xs font-mono text-gray-500 whitespace-nowrap">
-            sku_code*, description*, unit (each/case/bag/drum/tote), quantity, storage_unit, dimensions_cm
+            sku_code*, description*, unit (each/case/bag/drum/tote), quantity, storage_unit, dimensions_cm, lot_number, inbound_date (YYYY-MM-DD)
           </p>
         </div>
       </div>
@@ -251,7 +257,8 @@ export default function ImportSKUsPage() {
                       <th className="px-3 py-2 text-left font-medium text-gray-500">Description</th>
                       <th className="px-3 py-2 text-left font-medium text-gray-500">Unit</th>
                       <th className="px-3 py-2 text-right font-medium text-gray-500">Qty</th>
-                      <th className="px-3 py-2 text-right font-medium text-gray-500">Storage</th>
+                      <th className="px-3 py-2 text-left font-medium text-gray-500">Lot #</th>
+                      <th className="px-3 py-2 text-left font-medium text-gray-500">Inbound date</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-100">
@@ -266,7 +273,8 @@ export default function ImportSKUsPage() {
                         <td className="px-3 py-2 text-gray-600">{row.description}</td>
                         <td className="px-3 py-2 text-gray-500">{row.unit || 'each'}</td>
                         <td className="px-3 py-2 text-right text-gray-500">{row.quantity || '—'}</td>
-                        <td className="px-3 py-2 text-right text-gray-500">{row.storage_unit || '—'}</td>
+                        <td className="px-3 py-2 text-gray-500">{row.lot_number || '—'}</td>
+                        <td className="px-3 py-2 text-gray-500">{row.inbound_date || '—'}</td>
                       </tr>
                     ))}
                   </tbody>

@@ -40,7 +40,7 @@ export default async function InventoryPage({ searchParams }: { searchParams: { 
     const skuIds = levels.map((r: any) => r.sku_id)
     const { data: skuRows } = await supabase
       .from('skus')
-      .select('id, sku_code, description, unit, storage_unit, quantity')
+      .select('id, sku_code, description, unit, storage_unit, quantity, lot_number, inbound_date')
       .in('id', skuIds)
     const skuMap = Object.fromEntries((skuRows ?? []).map((s: any) => [s.id, s]))
     inventory = levels.map((row: any) => ({ ...row, skus: skuMap[row.sku_id] }))

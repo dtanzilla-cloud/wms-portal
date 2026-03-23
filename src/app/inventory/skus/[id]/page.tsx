@@ -13,6 +13,8 @@ export default function EditSKUPage({ params }: { params: { id: string } }) {
   const [loading, setLoading] = useState(false)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
+  const [profile, setProfile] = useState<any>(null)
+  const [originalQty, setOriginalQty] = useState<number>(0)
 
   const [skuCode, setSkuCode] = useState('')
   const [description, setDescription] = useState('')
@@ -20,18 +22,35 @@ export default function EditSKUPage({ params }: { params: { id: string } }) {
   const [quantity, setQuantity] = useState('')
   const [storageUnit, setStorageUnit] = useState('')
   const [dimensionsCm, setDimensionsCm] = useState('')
+  const [lotNumber, setLotNumber] = useState('')
+  const [inboundDate, setInboundDate] = useState('')
 
   useEffect(() => {
     async function load() {
       setLoading(true)
+      const { data: { user } } = await supabase.auth.getUser()
+      const { data: prof } = await supabase.from('profiles').select('*').eq('id', user!.id).single()
+      setProfile(prof)
+
       const { data } = await supabase.from('skus').select('*').eq('id', params.id).single()
       if (data) {
         setSkuCode(data.sku_code)
         setDescription(data.description)
         setUnit(data.unit)
-        setQuantity(data.quantity?.toString() ?? '')
         setStorageUnit(data.storage_unit?.toString() ?? '')
         setDimensionsCm(data.dimensions_cm ?? '')
+        setLotNumber(data.lot_number ?? '')
+        setInboundDate(data.inbound_date ?? '')
+
+        // Get movements-based on-hand as the authoritative quantity
+        const { data: level } = await supabase
+          .from('inventory_levels')
+          .select('quantity_on_hand')
+          .eq('sku_id', params.id)
+          .maybeSingle()
+        const onHand = (level as any)?.quantity_on_hand ?? data.quantity ?? 0
+        setQuantity(onHand.toString())
+        setOriginalQty(onHand)
       }
       setLoading(false)
     }
@@ -43,15 +62,33 @@ export default function EditSKUPage({ params }: { params: { id: string } }) {
     setSaving(true)
     setError('')
     try {
+      const newQty = quantity ? parseInt(quantity) : 0
       const { error: err } = await supabase.from('skus').update({
         sku_code: skuCode.toUpperCase(),
         description,
         unit,
-        quantity: quantity ? parseInt(quantity) : null,
+        quantity: newQty || null,
         storage_unit: storageUnit ? parseInt(storageUnit) : null,
         dimensions_cm: dimensionsCm || null,
+        lot_number: lotNumber || null,
+        inbound_date: inboundDate || null,
       }).eq('id', params.id)
       if (err) throw err
+
+      // If quantity changed, create an adjustment movement to keep On Hand in sync
+      const diff = newQty - originalQty
+      if (diff !== 0 && profile) {
+        const { data: sku } = await supabase.from('skus').select('customer_id').eq('id', params.id).single()
+        const { error: mvErr } = await supabase.from('inventory_movements').insert({
+          sku_id: params.id,
+          customer_id: (sku as any).customer_id,
+          movement_type: 'adjustment',
+          quantity: diff,
+          created_by: profile.id,
+        })
+        if (mvErr) throw mvErr
+      }
+
       router.push('/inventory')
     } catch (e: any) {
       setError(e.message)
@@ -60,8 +97,9 @@ export default function EditSKUPage({ params }: { params: { id: string } }) {
   }
 
   async function handleDelete() {
-    if (!confirm('Delete this SKU? This cannot be undone.')) return
+    if (!confirm('Delete this SKU and all its inventory history? This cannot be undone.')) return
     setSaving(true)
+    await supabase.from('inventory_movements').delete().eq('sku_id', params.id)
     await supabase.from('skus').delete().eq('id', params.id)
     router.push('/inventory')
   }
@@ -99,10 +137,11 @@ export default function EditSKUPage({ params }: { params: { id: string } }) {
         </div>
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1">Quantity</label>
+            <label className="block text-xs font-medium text-gray-600 mb-1">On hand (qty)</label>
             <input type="number" step="1" min="0" value={quantity} onChange={e => setQuantity(e.target.value)}
               className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
               placeholder="0" />
+            <p className="text-xs text-gray-400 mt-1">Changing this creates an adjustment</p>
           </div>
           <div>
             <label className="block text-xs font-medium text-gray-600 mb-1">Storage unit</label>
@@ -116,6 +155,19 @@ export default function EditSKUPage({ params }: { params: { id: string } }) {
           <input type="text" value={dimensionsCm} onChange={e => setDimensionsCm(e.target.value)}
             className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
             placeholder="30×20×10" />
+        </div>
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <label className="block text-xs font-medium text-gray-600 mb-1">Lot number</label>
+            <input type="text" value={lotNumber} onChange={e => setLotNumber(e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              placeholder="LOT-001" />
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-gray-600 mb-1">Inbound date</label>
+            <input type="date" value={inboundDate} onChange={e => setInboundDate(e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+          </div>
         </div>
         {error && <p className="text-sm text-red-600 bg-red-50 px-3 py-2 rounded">{error}</p>}
         <div className="flex items-center justify-between pt-2">
