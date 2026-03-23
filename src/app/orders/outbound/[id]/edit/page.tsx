@@ -133,6 +133,9 @@ export default function EditOutboundOrderPage() {
       )
       if (insErr) throw insErr
 
+      fetch('/api/notifications', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ type: 'order_updated', order_id: orderId }) })
+
       router.push(`/orders/outbound/${orderId}`)
     } catch (e: any) {
       setError(e.message)

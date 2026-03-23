@@ -9,6 +9,7 @@ import {
   sendOutboundPicked,
   sendOutboundPacked,
   sendOutboundShipped,
+  sendOrderUpdated,
   sendOrderCancelled,
   sendDocumentUploaded,
 } from '@/lib/notifications'
@@ -70,6 +71,11 @@ export async function POST(req: NextRequest) {
       if (type === 'outbound_shipped') {
         if (customerEmail) sends.push(sendOutboundShipped(customerEmail, orderNumber, order.tracking_number ?? undefined))
         if (staffEmail) sends.push(sendOutboundShipped(staffEmail, orderNumber, order.tracking_number ?? undefined, customerName))
+      }
+
+      if (type === 'order_updated') {
+        if (customerEmail) sends.push(sendOrderUpdated(customerEmail, orderNumber, order.order_type))
+        if (staffEmail) sends.push(sendOrderUpdated(staffEmail, orderNumber, order.order_type, customerName))
       }
 
       if (type === 'order_cancelled') {

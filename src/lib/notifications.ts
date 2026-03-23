@@ -150,6 +150,24 @@ export async function sendOutboundShipped(to: string, orderNumber: string, track
   })
 }
 
+// ── Order updated ────────────────────────────────────────────────────────────
+
+export async function sendOrderUpdated(to: string, orderNumber: string, orderType: string, customerName?: string) {
+  const isStaff = !!customerName
+  const typeLabel = orderType === 'inbound' ? 'inbound' : 'outbound'
+  await resend.emails.send({
+    from: FROM, to,
+    subject: isStaff
+      ? `Order ${orderNumber} has been updated`
+      : `Your ${typeLabel} order ${orderNumber} has been updated`,
+    html: baseLayout('Order updated',
+      isStaff
+        ? `${p(`${typeLabel.charAt(0).toUpperCase() + typeLabel.slice(1)} order <strong>${orderNumber}</strong> for <strong>${customerName}</strong> has been updated.`)}${btn('View order', `${APP_URL}/orders/${typeLabel}`)}`
+        : `${p(`Your ${typeLabel} order <strong>${orderNumber}</strong> has been updated. Please review the changes.`)}${btn('View order', `${APP_URL}/orders/${typeLabel}`)}`
+    )
+  })
+}
+
 // ── Cancellation ─────────────────────────────────────────────────────────────
 
 export async function sendOrderCancelled(to: string, orderNumber: string, orderType: string, customerName?: string) {
