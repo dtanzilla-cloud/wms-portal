@@ -45,6 +45,7 @@ export async function POST(req: NextRequest) {
         : ''
 
       // Consignee
+      const trackUrl = `${process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000'}/track/${order.order_number}`
       const consigneeEmail = (order.consignees as any)?.contact_email ?? null
       const consigneeName = (order.consignees as any)?.company_name ?? ''
       const addr = order.consignee_addresses as any
@@ -104,37 +105,37 @@ export async function POST(req: NextRequest) {
       if (type === 'outbound_submitted') {
         staffEmails.forEach(e => sends.push(sendOutboundSubmitted(e, orderNumber, customerName)))
         customerEmails.forEach(e => sends.push(sendOutboundSubmitted(e, orderNumber)))
-        if (consigneeEmail) sends.push(sendConsigneeOrderConfirmation(consigneeEmail, orderNumber, consigneeName, orderItems, deliveryAddress, warehouseAddress))
+        if (consigneeEmail) sends.push(sendConsigneeOrderConfirmation(consigneeEmail, orderNumber, consigneeName, orderItems, deliveryAddress, warehouseAddress, trackUrl))
       }
 
       if (type === 'outbound_picked') {
         customerEmails.forEach(e => sends.push(sendOutboundPicked(e, orderNumber)))
         staffEmails.forEach(e => sends.push(sendOutboundPicked(e, orderNumber, customerName)))
-        if (consigneeEmail) sends.push(sendConsigneeOrderUpdated(consigneeEmail, orderNumber, consigneeName, 'picked'))
+        if (consigneeEmail) sends.push(sendConsigneeOrderUpdated(consigneeEmail, orderNumber, consigneeName, 'picked', trackUrl))
       }
 
       if (type === 'outbound_packed') {
         customerEmails.forEach(e => sends.push(sendOutboundPacked(e, orderNumber)))
         staffEmails.forEach(e => sends.push(sendOutboundPacked(e, orderNumber, customerName)))
-        if (consigneeEmail) sends.push(sendConsigneeOrderUpdated(consigneeEmail, orderNumber, consigneeName, 'packed'))
+        if (consigneeEmail) sends.push(sendConsigneeOrderUpdated(consigneeEmail, orderNumber, consigneeName, 'packed', trackUrl))
       }
 
       if (type === 'outbound_shipped') {
         customerEmails.forEach(e => sends.push(sendOutboundShipped(e, orderNumber, order.tracking_number ?? undefined)))
         staffEmails.forEach(e => sends.push(sendOutboundShipped(e, orderNumber, order.tracking_number ?? undefined, customerName)))
-        if (consigneeEmail) sends.push(sendConsigneeOrderShipped(consigneeEmail, orderNumber, consigneeName, order.tracking_number ?? undefined, order.carrier ?? undefined, warehouseAddress))
+        if (consigneeEmail) sends.push(sendConsigneeOrderShipped(consigneeEmail, orderNumber, consigneeName, order.tracking_number ?? undefined, order.carrier ?? undefined, warehouseAddress, trackUrl))
       }
 
       if (type === 'order_updated') {
         customerEmails.forEach(e => sends.push(sendOrderUpdated(e, orderNumber, order.order_type)))
         staffEmails.forEach(e => sends.push(sendOrderUpdated(e, orderNumber, order.order_type, customerName)))
-        if (consigneeEmail && order.order_type === 'outbound') sends.push(sendConsigneeOrderUpdated(consigneeEmail, orderNumber, consigneeName, 'updated'))
+        if (consigneeEmail && order.order_type === 'outbound') sends.push(sendConsigneeOrderUpdated(consigneeEmail, orderNumber, consigneeName, 'updated', trackUrl))
       }
 
       if (type === 'order_cancelled') {
         customerEmails.forEach(e => sends.push(sendOrderCancelled(e, orderNumber, order.order_type)))
         staffEmails.forEach(e => sends.push(sendOrderCancelled(e, orderNumber, order.order_type, customerName)))
-        if (consigneeEmail && order.order_type === 'outbound') sends.push(sendConsigneeOrderUpdated(consigneeEmail, orderNumber, consigneeName, 'cancelled'))
+        if (consigneeEmail && order.order_type === 'outbound') sends.push(sendConsigneeOrderUpdated(consigneeEmail, orderNumber, consigneeName, 'cancelled', trackUrl))
       }
 
       const results = await Promise.allSettled(sends)

@@ -37,6 +37,24 @@ function btn(label: string, href: string) {
   return `<a href="${href}" style="display:inline-block;margin-top:16px;padding:10px 20px;background:#2563eb;color:#fff;border-radius:6px;text-decoration:none;font-size:14px;font-weight:500">${label}</a>`
 }
 
+function consigneeLayout(title: string, body: string, trackUrl: string) {
+  return `
+<!DOCTYPE html><html><body style="margin:0;padding:0;background:#f8fafc;font-family:Inter,system-ui,sans-serif">
+<div style="max-width:560px;margin:40px auto;background:#fff;border:1px solid #e2e8f0;border-radius:8px;overflow:hidden">
+  <div style="background:#1d4ed8;padding:20px 28px">
+    <span style="color:#fff;font-size:16px;font-weight:600">WMS Portal</span>
+  </div>
+  <div style="padding:28px">
+    <h2 style="margin:0 0 12px;font-size:18px;color:#1e293b">${title}</h2>
+    ${body}
+    <div style="margin-top:28px;padding-top:20px;border-top:1px solid #f1f5f9;font-size:12px;color:#94a3b8">
+      <a href="${trackUrl}" style="display:inline-block;padding:8px 18px;background:#f97316;color:#fff;border-radius:6px;text-decoration:none;font-size:13px;font-weight:500">Track your shipment</a>
+    </div>
+  </div>
+</div>
+</body></html>`
+}
+
 function p(text: string) {
   return `<p style="color:#475569;font-size:14px;line-height:1.6;margin:0 0 8px">${text}</p>`
 }
@@ -207,6 +225,7 @@ export async function sendConsigneeOrderConfirmation(
   items: { sku_code: string; description: string; quantity: number; unit: string }[],
   deliveryAddress: string,
   warehouseAddress: string,
+  trackUrl: string,
 ) {
   const rows = items.map(i =>
     `<tr>
@@ -219,7 +238,7 @@ export async function sendConsigneeOrderConfirmation(
   await resend.emails.send({
     from: FROM, to,
     subject: `Incoming shipment ${orderNumber} — Order confirmation`,
-    html: baseLayout('Incoming shipment confirmation',
+    html: consigneeLayout('Incoming shipment confirmation',
       `${p(`An outbound order <strong>${orderNumber}</strong> has been placed for delivery to <strong>${consigneeName}</strong>.`)}
       <table style="width:100%;border-collapse:collapse;font-size:13px;margin:16px 0">
         <thead>
@@ -232,7 +251,8 @@ export async function sendConsigneeOrderConfirmation(
         <tbody>${rows}</tbody>
       </table>
       ${deliveryAddress ? p(`Deliver to: <strong>${deliveryAddress}</strong>`) : ''}
-      ${warehouseAddress ? p(`Shipping from: ${warehouseAddress}`) : ''}`
+      ${warehouseAddress ? p(`Shipping from: ${warehouseAddress}`) : ''}`,
+      trackUrl,
     )
   })
 }
@@ -244,15 +264,17 @@ export async function sendConsigneeOrderShipped(
   tracking?: string,
   carrier?: string,
   warehouseAddress?: string,
+  trackUrl?: string,
 ) {
   await resend.emails.send({
     from: FROM, to,
     subject: `Your shipment ${orderNumber} is on its way`,
-    html: baseLayout('Your shipment has been dispatched',
+    html: consigneeLayout('Your shipment has been dispatched',
       `${p(`Order <strong>${orderNumber}</strong> has been dispatched and is on its way to <strong>${consigneeName}</strong>.`)}
       ${carrier ? p(`Carrier: <strong>${carrier}</strong>`) : ''}
       ${tracking ? p(`Tracking number: <strong>${tracking}</strong>`) : ''}
-      ${warehouseAddress ? p(`Shipped from: ${warehouseAddress}`) : ''}`
+      ${warehouseAddress ? p(`Shipped from: ${warehouseAddress}`) : ''}`,
+      trackUrl ?? APP_URL,
     )
   })
 }
@@ -262,14 +284,16 @@ export async function sendConsigneeOrderUpdated(
   orderNumber: string,
   consigneeName: string,
   status: string,
+  trackUrl?: string,
 ) {
   const statusLabel = status.replace(/_/g, ' ')
   await resend.emails.send({
     from: FROM, to,
     subject: `Update on your incoming shipment ${orderNumber}`,
-    html: baseLayout('Shipment update',
+    html: consigneeLayout('Shipment update',
       `${p(`Your incoming shipment <strong>${orderNumber}</strong> for <strong>${consigneeName}</strong> has been updated.`)}
-      ${p(`Current status: <strong>${statusLabel}</strong>`)}`
+      ${p(`Current status: <strong>${statusLabel}</strong>`)}`,
+      trackUrl ?? APP_URL,
     )
   })
 }
