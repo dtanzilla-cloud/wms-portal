@@ -198,6 +198,82 @@ export async function sendOrderCancelled(to: string, orderNumber: string, orderT
   })
 }
 
+// ── Consignee ────────────────────────────────────────────────────────────────
+
+export async function sendConsigneeOrderConfirmation(
+  to: string,
+  orderNumber: string,
+  consigneeName: string,
+  items: { sku_code: string; description: string; quantity: number; unit: string }[],
+  deliveryAddress: string,
+  warehouseAddress: string,
+) {
+  const rows = items.map(i =>
+    `<tr>
+      <td style="padding:6px 8px;border-bottom:1px solid #f1f5f9">${i.sku_code}</td>
+      <td style="padding:6px 8px;border-bottom:1px solid #f1f5f9">${i.description}</td>
+      <td style="padding:6px 8px;border-bottom:1px solid #f1f5f9">${i.quantity} ${i.unit}</td>
+    </tr>`
+  ).join('')
+
+  await resend.emails.send({
+    from: FROM, to,
+    subject: `Incoming shipment ${orderNumber} — Order confirmation`,
+    html: baseLayout('Incoming shipment confirmation',
+      `${p(`An outbound order <strong>${orderNumber}</strong> has been placed for delivery to <strong>${consigneeName}</strong>.`)}
+      <table style="width:100%;border-collapse:collapse;font-size:13px;margin:16px 0">
+        <thead>
+          <tr style="background:#f1f5f9">
+            <th style="text-align:left;padding:8px">SKU</th>
+            <th style="text-align:left;padding:8px">Description</th>
+            <th style="text-align:left;padding:8px">Qty</th>
+          </tr>
+        </thead>
+        <tbody>${rows}</tbody>
+      </table>
+      ${deliveryAddress ? p(`Deliver to: <strong>${deliveryAddress}</strong>`) : ''}
+      ${warehouseAddress ? p(`Shipping from: ${warehouseAddress}`) : ''}`
+    )
+  })
+}
+
+export async function sendConsigneeOrderShipped(
+  to: string,
+  orderNumber: string,
+  consigneeName: string,
+  tracking?: string,
+  carrier?: string,
+  warehouseAddress?: string,
+) {
+  await resend.emails.send({
+    from: FROM, to,
+    subject: `Your shipment ${orderNumber} is on its way`,
+    html: baseLayout('Your shipment has been dispatched',
+      `${p(`Order <strong>${orderNumber}</strong> has been dispatched and is on its way to <strong>${consigneeName}</strong>.`)}
+      ${carrier ? p(`Carrier: <strong>${carrier}</strong>`) : ''}
+      ${tracking ? p(`Tracking number: <strong>${tracking}</strong>`) : ''}
+      ${warehouseAddress ? p(`Shipped from: ${warehouseAddress}`) : ''}`
+    )
+  })
+}
+
+export async function sendConsigneeOrderUpdated(
+  to: string,
+  orderNumber: string,
+  consigneeName: string,
+  status: string,
+) {
+  const statusLabel = status.replace(/_/g, ' ')
+  await resend.emails.send({
+    from: FROM, to,
+    subject: `Update on your incoming shipment ${orderNumber}`,
+    html: baseLayout('Shipment update',
+      `${p(`Your incoming shipment <strong>${orderNumber}</strong> for <strong>${consigneeName}</strong> has been updated.`)}
+      ${p(`Current status: <strong>${statusLabel}</strong>`)}`
+    )
+  })
+}
+
 // ── Documents & Trials ───────────────────────────────────────────────────────
 
 export async function sendDocumentUploaded(to: string, orderNumber: string, filename: string) {

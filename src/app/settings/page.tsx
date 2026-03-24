@@ -2,6 +2,7 @@ import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import ChangePasswordForm from '@/components/settings/ChangePasswordForm'
 import StaffManager from '@/components/settings/StaffManager'
+import WarehouseSettings from '@/components/settings/WarehouseSettings'
 
 export default async function SettingsPage() {
   const supabase = await createClient()
@@ -52,6 +53,9 @@ export default async function SettingsPage() {
 
         {/* Change password */}
         <ChangePasswordForm />
+
+        {/* Warehouse address — admin only */}
+        {isAdmin && <WarehouseSettings />}
 
         {/* Staff management — staff only */}
         {isStaff && (

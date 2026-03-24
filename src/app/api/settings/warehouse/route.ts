@@ -1,0 +1,49 @@
+import { NextRequest, NextResponse } from 'next/server'
+import { createClient } from '@/lib/supabase/server'
+
+export async function GET() {
+  const supabase = await createClient()
+  const { data } = await supabase
+    .from('company_settings')
+    .select('*')
+    .eq('id', 1)
+    .single()
+  return NextResponse.json(data ?? {})
+}
+
+export async function PUT(req: NextRequest) {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('role')
+    .eq('id', user.id)
+    .single()
+  if (profile?.role !== 'admin') return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+
+  const body = await req.json()
+  const { warehouse_name, address_line1, address_line2, city, state, postal_code, country, phone, email } = body
+
+  const { data, error } = await supabase
+    .from('company_settings')
+    .upsert({
+      id: 1,
+      warehouse_name,
+      address_line1,
+      address_line2,
+      city,
+      state,
+      postal_code,
+      country: country || 'US',
+      phone,
+      email,
+      updated_at: new Date().toISOString(),
+    })
+    .select()
+    .single()
+
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+  return NextResponse.json(data)
+}

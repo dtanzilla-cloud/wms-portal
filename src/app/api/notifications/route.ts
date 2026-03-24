@@ -12,6 +12,9 @@ import {
   sendOrderUpdated,
   sendOrderCancelled,
   sendDocumentUploaded,
+  sendConsigneeOrderConfirmation,
+  sendConsigneeOrderShipped,
+  sendConsigneeOrderUpdated,
 } from '@/lib/notifications'
 
 export async function POST(req: NextRequest) {
@@ -25,11 +28,35 @@ export async function POST(req: NextRequest) {
     if (order_id) {
       const { data: order } = await supabase
         .from('orders')
-        .select('*, customers(name, billing_email)')
+        .select('*, customers(name, billing_email), consignees(company_name, contact_email), consignee_addresses:consignee_address_id(address_line1, address_line2, city, state, postal_code, country), order_items(quantity, skus(sku_code, description, unit))')
         .eq('id', order_id)
         .single()
 
       if (!order) return NextResponse.json({ error: 'Order not found' }, { status: 404 })
+
+      // Warehouse address for consignee emails
+      const { data: warehouseSettings } = await supabase
+        .from('company_settings')
+        .select('warehouse_name, address_line1, address_line2, city, state, postal_code, country')
+        .eq('id', 1)
+        .single()
+      const warehouseAddress = warehouseSettings
+        ? [warehouseSettings.warehouse_name, warehouseSettings.address_line1, warehouseSettings.address_line2, warehouseSettings.city, warehouseSettings.state, warehouseSettings.postal_code].filter(Boolean).join(', ')
+        : ''
+
+      // Consignee
+      const consigneeEmail = (order.consignees as any)?.contact_email ?? null
+      const consigneeName = (order.consignees as any)?.company_name ?? ''
+      const addr = order.consignee_addresses as any
+      const deliveryAddress = addr
+        ? [addr.address_line1, addr.address_line2, addr.city, addr.state, addr.postal_code, addr.country].filter(Boolean).join(', ')
+        : ''
+      const orderItems = ((order.order_items as any[]) ?? []).map((i: any) => ({
+        sku_code: i.skus?.sku_code ?? '',
+        description: i.skus?.description ?? '',
+        quantity: i.quantity,
+        unit: i.skus?.unit ?? '',
+      }))
 
       // Use admin profile emails from the database, fall back to env var
       const { data: admins } = await supabase
@@ -77,31 +104,37 @@ export async function POST(req: NextRequest) {
       if (type === 'outbound_submitted') {
         staffEmails.forEach(e => sends.push(sendOutboundSubmitted(e, orderNumber, customerName)))
         customerEmails.forEach(e => sends.push(sendOutboundSubmitted(e, orderNumber)))
+        if (consigneeEmail) sends.push(sendConsigneeOrderConfirmation(consigneeEmail, orderNumber, consigneeName, orderItems, deliveryAddress, warehouseAddress))
       }
 
       if (type === 'outbound_picked') {
         customerEmails.forEach(e => sends.push(sendOutboundPicked(e, orderNumber)))
         staffEmails.forEach(e => sends.push(sendOutboundPicked(e, orderNumber, customerName)))
+        if (consigneeEmail) sends.push(sendConsigneeOrderUpdated(consigneeEmail, orderNumber, consigneeName, 'picked'))
       }
 
       if (type === 'outbound_packed') {
         customerEmails.forEach(e => sends.push(sendOutboundPacked(e, orderNumber)))
         staffEmails.forEach(e => sends.push(sendOutboundPacked(e, orderNumber, customerName)))
+        if (consigneeEmail) sends.push(sendConsigneeOrderUpdated(consigneeEmail, orderNumber, consigneeName, 'packed'))
       }
 
       if (type === 'outbound_shipped') {
         customerEmails.forEach(e => sends.push(sendOutboundShipped(e, orderNumber, order.tracking_number ?? undefined)))
         staffEmails.forEach(e => sends.push(sendOutboundShipped(e, orderNumber, order.tracking_number ?? undefined, customerName)))
+        if (consigneeEmail) sends.push(sendConsigneeOrderShipped(consigneeEmail, orderNumber, consigneeName, order.tracking_number ?? undefined, order.carrier ?? undefined, warehouseAddress))
       }
 
       if (type === 'order_updated') {
         customerEmails.forEach(e => sends.push(sendOrderUpdated(e, orderNumber, order.order_type)))
         staffEmails.forEach(e => sends.push(sendOrderUpdated(e, orderNumber, order.order_type, customerName)))
+        if (consigneeEmail && order.order_type === 'outbound') sends.push(sendConsigneeOrderUpdated(consigneeEmail, orderNumber, consigneeName, 'updated'))
       }
 
       if (type === 'order_cancelled') {
         customerEmails.forEach(e => sends.push(sendOrderCancelled(e, orderNumber, order.order_type)))
         staffEmails.forEach(e => sends.push(sendOrderCancelled(e, orderNumber, order.order_type, customerName)))
+        if (consigneeEmail && order.order_type === 'outbound') sends.push(sendConsigneeOrderUpdated(consigneeEmail, orderNumber, consigneeName, 'cancelled'))
       }
 
       const results = await Promise.allSettled(sends)
@@ -111,6 +144,7 @@ export async function POST(req: NextRequest) {
         orderNumber,
         staffEmails,
         customerEmails,
+        consigneeEmail,
         sendsQueued: sends.length,
         results: results.map((r, i) =>
           r.status === 'fulfilled'
