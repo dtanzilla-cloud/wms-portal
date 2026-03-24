@@ -175,6 +175,18 @@ export default async function OutboundOrderDetailPage({ params }: { params: { id
                 <dt className="text-gray-500">Pallets</dt>
                 <dd className="text-gray-800">{order.pallet_count}</dd>
               </div>
+              {order.pallet_weight_kg && (
+                <div className="flex justify-between">
+                  <dt className="text-gray-500">Pallet weight</dt>
+                  <dd className="text-gray-800">{order.pallet_weight_kg} kg</dd>
+                </div>
+              )}
+              {order.pallet_dimensions && (
+                <div className="flex justify-between">
+                  <dt className="text-gray-500">Dimensions</dt>
+                  <dd className="text-gray-800 font-mono text-xs">{order.pallet_dimensions}</dd>
+                </div>
+              )}
               {order.carrier && (
                 <div className="flex justify-between">
                   <dt className="text-gray-500">Carrier</dt>

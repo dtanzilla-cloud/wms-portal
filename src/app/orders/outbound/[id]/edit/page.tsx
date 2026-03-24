@@ -34,6 +34,8 @@ export default function EditOutboundOrderPage() {
   const [consigneeAddressId, setConsigneeAddressId] = useState('')
   const [shipByDate, setShipByDate] = useState('')
   const [palletCount, setPalletCount] = useState('1')
+  const [palletWeightKg, setPalletWeightKg] = useState('')
+  const [palletDimensions, setPalletDimensions] = useState('')
   const [notes, setNotes] = useState('')
   const [deliveryInstructions, setDeliveryInstructions] = useState('')
   const [referenceType, setReferenceType] = useState('')
@@ -62,6 +64,8 @@ export default function EditOutboundOrderPage() {
       setConsigneeAddressId(ord.consignee_address_id ?? '')
       setShipByDate(ord.ship_by_date ?? '')
       setPalletCount(String(ord.pallet_count ?? 1))
+      setPalletWeightKg(ord.pallet_weight_kg != null ? String(ord.pallet_weight_kg) : '')
+      setPalletDimensions(ord.pallet_dimensions ?? '')
       setNotes(ord.notes ?? '')
       setDeliveryInstructions(ord.delivery_instructions ?? '')
       setReferenceType(ord.reference_type ?? '')
@@ -117,6 +121,8 @@ export default function EditOutboundOrderPage() {
         consignee_address_id: consigneeAddressId || null,
         ship_by_date: shipByDate || null,
         pallet_count: parseInt(palletCount) || 1,
+        pallet_weight_kg: palletWeightKg ? parseFloat(palletWeightKg) : null,
+        pallet_dimensions: palletDimensions || null,
         notes: notes || null,
         delivery_instructions: deliveryInstructions || null,
         reference_type: referenceType || null,
@@ -193,6 +199,18 @@ export default function EditOutboundOrderPage() {
             <div>
               <label className="block text-xs font-medium text-gray-600 mb-1">Pallet count <span className="text-red-500">*</span></label>
               <input type="number" min="1" required value={palletCount} onChange={e => setPalletCount(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-gray-600 mb-1">Pallet weight (kg)</label>
+              <input type="number" min="0" step="0.01" value={palletWeightKg} onChange={e => setPalletWeightKg(e.target.value)}
+                placeholder="e.g. 500.00"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+            </div>
+            <div className="col-span-2">
+              <label className="block text-xs font-medium text-gray-600 mb-1">Pallet dimensions</label>
+              <input type="text" value={palletDimensions} onChange={e => setPalletDimensions(e.target.value)}
+                placeholder="e.g. 120 × 100 × 150 cm"
                 className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
             </div>
             <div>

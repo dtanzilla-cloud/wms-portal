@@ -31,6 +31,8 @@ export default function NewOutboundOrderPage() {
   const [consigneeAddressId, setConsigneeAddressId] = useState('')
   const [shipByDate, setShipByDate] = useState('')
   const [palletCount, setPalletCount] = useState('1')
+  const [palletWeightKg, setPalletWeightKg] = useState('')
+  const [palletDimensions, setPalletDimensions] = useState('')
   const [notes, setNotes] = useState('')
   const [deliveryInstructions, setDeliveryInstructions] = useState('')
   const [referenceType, setReferenceType] = useState('')
@@ -107,6 +109,8 @@ export default function NewOutboundOrderPage() {
         status: asDraft ? 'draft' : 'submitted',
         consignee_id: consigneeId, consignee_address_id: consigneeAddressId || null,
         ship_by_date: shipByDate || null, pallet_count: parseInt(palletCount) || 1,
+        pallet_weight_kg: palletWeightKg ? parseFloat(palletWeightKg) : null,
+        pallet_dimensions: palletDimensions || null,
         notes: notes || null, delivery_instructions: deliveryInstructions || null,
         reference_type: referenceType || null, reference_number: referenceNumber || null,
         created_by: profile.id,
@@ -193,6 +197,18 @@ export default function NewOutboundOrderPage() {
             <div>
               <label className="block text-xs font-medium text-gray-600 mb-1">Pallet count <span className="text-red-500">*</span></label>
               <input type="number" min="1" required value={palletCount} onChange={e => setPalletCount(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-gray-600 mb-1">Pallet weight (kg)</label>
+              <input type="number" min="0" step="0.01" value={palletWeightKg} onChange={e => setPalletWeightKg(e.target.value)}
+                placeholder="e.g. 500.00"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+            </div>
+            <div className="col-span-2">
+              <label className="block text-xs font-medium text-gray-600 mb-1">Pallet dimensions</label>
+              <input type="text" value={palletDimensions} onChange={e => setPalletDimensions(e.target.value)}
+                placeholder="e.g. 120 × 100 × 150 cm"
                 className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
             </div>
             <div>
