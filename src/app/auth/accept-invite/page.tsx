@@ -1,9 +1,10 @@
 'use client'
-import { useEffect, useState } from 'react'
+import { Suspense, useEffect, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 
-export default function AcceptInvitePage() {
+// Inner component uses useSearchParams — must be inside <Suspense>
+function AcceptInviteContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const token = searchParams.get('token') ?? ''
@@ -16,7 +17,6 @@ export default function AcceptInvitePage() {
 
   useEffect(() => {
     if (!token) { setTokenValid(false); return }
-    // Validate token by fetching consignee info from a lightweight check endpoint
     fetch(`/api/invites/consignee/check?token=${token}`)
       .then(r => r.json())
       .then(d => {
@@ -67,9 +67,7 @@ export default function AcceptInvitePage() {
             <p className="text-sm text-red-600 bg-red-50 px-3 py-2 rounded mb-4">
               {error || 'This invitation link is invalid or has expired.'}
             </p>
-            <Link href="/auth/login" className="text-sm text-blue-600 hover:underline">
-              Go to login
-            </Link>
+            <Link href="/auth/login" className="text-sm text-blue-600 hover:underline">Go to login</Link>
           </div>
         </div>
       </div>
@@ -111,10 +109,24 @@ export default function AcceptInvitePage() {
             </button>
           </form>
           <div className="mt-4 text-center text-xs text-gray-500">
-            Already have an account? <Link href="/auth/login" className="text-blue-600 hover:underline">Sign in</Link>
+            Already have an account?{' '}
+            <Link href="/auth/login" className="text-blue-600 hover:underline">Sign in</Link>
           </div>
         </div>
       </div>
     </div>
+  )
+}
+
+// Outer wrapper provides the required Suspense boundary for useSearchParams
+export default function AcceptInvitePage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <p className="text-sm text-gray-500">Loading…</p>
+      </div>
+    }>
+      <AcceptInviteContent />
+    </Suspense>
   )
 }

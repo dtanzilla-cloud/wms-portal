@@ -1,18 +1,29 @@
 import { Resend } from 'resend'
 
-const resend = new Resend(process.env.RESEND_API_KEY)
-const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000'
+// Lazy initialisation — avoids "Missing API key" crash during Next.js build
+// when env vars are not yet available.
+let _resend: Resend | null = null
+function getResend(): Resend {
+  if (!_resend) _resend = new Resend(process.env.RESEND_API_KEY)
+  return _resend
+}
+
+function getAppUrl() { return process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000' }
 
 function getFrom() {
   if (process.env.RESEND_FROM_EMAIL) return process.env.RESEND_FROM_EMAIL
   try {
-    const host = new URL(APP_URL.startsWith('http') ? APP_URL : `https://${APP_URL}`).hostname
+    const host = new URL(getAppUrl().startsWith('http') ? getAppUrl() : `https://${getAppUrl()}`).hostname
     return `CTS Portal <noreply@${host}>`
   } catch {
     return `CTS Portal <noreply@yourdomain.com>`
   }
 }
+
+// These are pure string helpers — safe to evaluate at module load time
+// (no Resend client involved, so no "Missing API key" error during build).
 const FROM = getFrom()
+const APP_URL = getAppUrl()
 
 // ── Shared order details interface ───────────────────────────────────────────
 
@@ -182,7 +193,7 @@ function consigneeLayout(title: string, body: string, trackUrl: string) {
 // ── Inbound ──────────────────────────────────────────────────────────────────
 
 export async function sendInboundSubmitted(to: string, orderNumber: string, customerName: string) {
-  await resend.emails.send({
+  await getResend().emails.send({
     from: FROM, to,
     subject: `New inbound order ${orderNumber} — ${customerName}`,
     html: baseLayout('New inbound order received',
@@ -192,7 +203,7 @@ export async function sendInboundSubmitted(to: string, orderNumber: string, cust
 }
 
 export async function sendInboundSubmittedCustomer(to: string, orderNumber: string) {
-  await resend.emails.send({
+  await getResend().emails.send({
     from: FROM, to,
     subject: `Inbound order ${orderNumber} submitted`,
     html: baseLayout('Order submitted',
@@ -203,7 +214,7 @@ export async function sendInboundSubmittedCustomer(to: string, orderNumber: stri
 
 export async function sendInboundReceived(to: string, orderNumber: string, customerName?: string) {
   const isStaff = !!customerName
-  await resend.emails.send({
+  await getResend().emails.send({
     from: FROM, to,
     subject: isStaff ? `Inbound order ${orderNumber} marked received` : `Your shipment ${orderNumber} has arrived`,
     html: baseLayout(
@@ -217,7 +228,7 @@ export async function sendInboundReceived(to: string, orderNumber: string, custo
 
 export async function sendInboundPutAway(to: string, orderNumber: string, customerName?: string) {
   const isStaff = !!customerName
-  await resend.emails.send({
+  await getResend().emails.send({
     from: FROM, to,
     subject: isStaff ? `Inbound order ${orderNumber} put away` : `Your shipment ${orderNumber} has been put away`,
     html: baseLayout(
@@ -236,7 +247,7 @@ export async function sendOutboundSubmitted(to: string, orderNumber: string, cus
   const intro = isStaff
     ? p(`Customer <strong>${customerName}</strong> has submitted outbound order <strong>${orderNumber}</strong> and is awaiting fulfillment.`)
     : p(`Your outbound order <strong>${orderNumber}</strong> has been submitted. The warehouse will begin processing it shortly.`)
-  await resend.emails.send({
+  await getResend().emails.send({
     from: FROM, to,
     subject: isStaff ? `New outbound order ${orderNumber} — ${customerName}` : `Outbound order ${orderNumber} submitted`,
     html: baseLayout(isStaff ? 'New outbound order received' : 'Order submitted',
@@ -249,7 +260,7 @@ export async function sendOutboundPicked(to: string, orderNumber: string, custom
   const intro = isStaff
     ? p(`Outbound order <strong>${orderNumber}</strong> for <strong>${customerName}</strong> has been picked.`)
     : p(`Your outbound order <strong>${orderNumber}</strong> is currently being picked at the warehouse.`)
-  await resend.emails.send({
+  await getResend().emails.send({
     from: FROM, to,
     subject: isStaff ? `Outbound order ${orderNumber} picked` : `Your order ${orderNumber} is being picked`,
     html: baseLayout(isStaff ? 'Outbound order picked' : 'Order being picked',
@@ -262,7 +273,7 @@ export async function sendOutboundPacked(to: string, orderNumber: string, custom
   const intro = isStaff
     ? p(`Outbound order <strong>${orderNumber}</strong> for <strong>${customerName}</strong> has been packed and is ready to ship.`)
     : p(`Your outbound order <strong>${orderNumber}</strong> has been packed and is ready for shipment.`)
-  await resend.emails.send({
+  await getResend().emails.send({
     from: FROM, to,
     subject: isStaff ? `Outbound order ${orderNumber} packed` : `Your order ${orderNumber} has been packed`,
     html: baseLayout(isStaff ? 'Outbound order packed' : 'Order packed & ready to ship',
@@ -279,7 +290,7 @@ export async function sendOutboundShipped(to: string, orderNumber: string, track
   const merged: OrderDetails | undefined = details
     ? { ...details, trackingNumber: details.trackingNumber ?? tracking }
     : tracking ? { trackingNumber: tracking } : undefined
-  await resend.emails.send({
+  await getResend().emails.send({
     from: FROM, to,
     subject: isStaff ? `Outbound order ${orderNumber} shipped` : `Your order ${orderNumber} has been shipped`,
     html: baseLayout(isStaff ? 'Outbound order shipped' : 'Order shipped',
@@ -295,7 +306,7 @@ export async function sendOrderUpdated(to: string, orderNumber: string, orderTyp
   const intro = isStaff
     ? p(`${typeLabel.charAt(0).toUpperCase() + typeLabel.slice(1)} order <strong>${orderNumber}</strong> for <strong>${customerName}</strong> has been updated.`)
     : p(`Your ${typeLabel} order <strong>${orderNumber}</strong> has been updated. Please review the changes.`)
-  await resend.emails.send({
+  await getResend().emails.send({
     from: FROM, to,
     subject: isStaff ? `Order ${orderNumber} has been updated` : `Your ${typeLabel} order ${orderNumber} has been updated`,
     html: baseLayout('Order updated',
@@ -306,7 +317,7 @@ export async function sendOrderUpdated(to: string, orderNumber: string, orderTyp
 export async function sendOrderCancelled(to: string, orderNumber: string, orderType: string, customerName?: string) {
   const isStaff = !!customerName
   const typeLabel = orderType === 'inbound' ? 'inbound' : 'outbound'
-  await resend.emails.send({
+  await getResend().emails.send({
     from: FROM, to,
     subject: isStaff ? `Order ${orderNumber} cancelled` : `Your ${typeLabel} order ${orderNumber} has been cancelled`,
     html: baseLayout('Order cancelled',
@@ -340,7 +351,7 @@ export async function sendConsigneeOrderConfirmation(
     ${buildOrderDetailsHtml(details)}
   `
 
-  await resend.emails.send({
+  await getResend().emails.send({
     from: FROM, to,
     ...(replyTo ? { reply_to: replyTo } : {}),
     subject,
@@ -360,7 +371,7 @@ export async function sendConsigneeOrderShipped(
     ${p(`Order <strong>${orderNumber}</strong> has been dispatched and is on its way to <strong>${consigneeName}</strong>.`)}
     ${buildOrderDetailsHtml(details, true)}
   `
-  await resend.emails.send({
+  await getResend().emails.send({
     from: FROM, to,
     ...(replyTo ? { reply_to: replyTo } : {}),
     subject: `Your shipment ${orderNumber} is on its way`,
@@ -383,7 +394,7 @@ export async function sendConsigneeOrderUpdated(
     ${p(`Current status: <strong style="text-transform:capitalize">${statusLabel}</strong>`)}
     ${buildOrderDetailsHtml(details, true)}
   `
-  await resend.emails.send({
+  await getResend().emails.send({
     from: FROM, to,
     ...(replyTo ? { reply_to: replyTo } : {}),
     subject: `Update on your incoming shipment ${orderNumber}`,
@@ -394,7 +405,7 @@ export async function sendConsigneeOrderUpdated(
 // ── Documents & Trials ───────────────────────────────────────────────────────
 
 export async function sendDocumentUploaded(to: string, orderNumber: string, filename: string) {
-  await resend.emails.send({
+  await getResend().emails.send({
     from: FROM, to,
     subject: `Document uploaded to order ${orderNumber}`,
     html: baseLayout('New document attached',
@@ -404,7 +415,7 @@ export async function sendDocumentUploaded(to: string, orderNumber: string, file
 }
 
 export async function sendTrialReminder(to: string, name: string, daysLeft: number) {
-  await resend.emails.send({
+  await getResend().emails.send({
     from: FROM, to,
     subject: `Your CTS Portal trial expires in ${daysLeft} day${daysLeft !== 1 ? 's' : ''}`,
     html: baseLayout('Your trial is ending soon',
@@ -414,7 +425,7 @@ export async function sendTrialReminder(to: string, name: string, daysLeft: numb
 }
 
 export async function sendNewTrialSignup(to: string, companyName: string, email: string) {
-  await resend.emails.send({
+  await getResend().emails.send({
     from: FROM, to,
     subject: `New trial signup — ${companyName}`,
     html: baseLayout('New trial account created',
