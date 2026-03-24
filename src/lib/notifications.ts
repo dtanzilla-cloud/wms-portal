@@ -69,6 +69,56 @@ export interface OrderDetails {
   documents?: { filename: string; url?: string }[]
 }
 
+// ── Unified subject helpers ───────────────────────────────────────────────────
+// Every recipient (staff, customer, consignee) receives the exact same subject
+// for a given order event so threads stay consistent in any email client.
+
+/** Short "SKU × qty (+N more)" snippet for use in inbound subjects */
+function itemsSummary(items?: OrderDetails['items']): string {
+  if (!items?.length) return ''
+  const { sku_code, quantity } = items[0]
+  const extra = items.length - 1
+  return extra > 0 ? `${sku_code} × ${quantity} (+${extra} more)` : `${sku_code} × ${quantity}`
+}
+
+/**
+ * Inbound subject — same string for staff + customer.
+ * Format:  Inbound order {num} | {customer} | {sku × qty} | {action}
+ */
+function inboundSubj(
+  orderNumber: string,
+  customerName: string,
+  action: string,
+  items?: OrderDetails['items'],
+): string {
+  return [
+    `Inbound order ${orderNumber}`,
+    customerName,
+    itemsSummary(items),
+    action,
+  ].filter(Boolean).join(' | ')
+}
+
+/**
+ * Outbound subject — same string for staff, customer, and consignee.
+ * Format:  Outbound order {num} | {customer} | {consignee} | {refType refNum} | {action}
+ */
+function outboundSubj(
+  orderNumber: string,
+  details: OrderDetails | undefined,
+  action: string,
+): string {
+  const parts: string[] = [`Outbound order ${orderNumber}`]
+  if (details?.customerName)  parts.push(details.customerName)
+  if (details?.consigneeName) parts.push(details.consigneeName)
+  if (details?.referenceType && details?.referenceNumber)
+    parts.push(`${details.referenceType} ${details.referenceNumber}`)
+  else if (details?.referenceNumber)
+    parts.push(details.referenceNumber)
+  if (action) parts.push(action)
+  return parts.join(' | ')
+}
+
 // ── HTML helpers ─────────────────────────────────────────────────────────────
 
 function p(text: string) {
@@ -217,50 +267,51 @@ function consigneeLayout(title: string, body: string, trackUrl: string) {
 
 // ── Inbound ──────────────────────────────────────────────────────────────────
 
-export async function sendInboundSubmitted(to: string, orderNumber: string, customerName: string) {
+export async function sendInboundSubmitted(to: string, orderNumber: string, customerName: string, details?: OrderDetails) {
   await dispatchEmail({
     from: FROM, to,
-    subject: `New inbound order ${orderNumber} — ${customerName}`,
+    subject: inboundSubj(orderNumber, customerName, 'Submitted', details?.items),
     html: baseLayout('New inbound order received',
       `${p(`Customer <strong>${customerName}</strong> has submitted inbound order <strong>${orderNumber}</strong> and is awaiting warehouse receipt.`)}
+      ${details ? buildOrderDetailsHtml(details) : ''}
       ${btn('View order', `${APP_URL}/orders/inbound`)}`)
   })
 }
 
-export async function sendInboundSubmittedCustomer(to: string, orderNumber: string) {
+export async function sendInboundSubmittedCustomer(to: string, orderNumber: string, customerName: string, details?: OrderDetails) {
   await dispatchEmail({
     from: FROM, to,
-    subject: `Inbound order ${orderNumber} submitted`,
+    subject: inboundSubj(orderNumber, customerName, 'Submitted', details?.items),
     html: baseLayout('Order submitted',
       `${p(`Your inbound order <strong>${orderNumber}</strong> has been submitted to the warehouse. You'll receive updates as it progresses.`)}
+      ${details ? buildOrderDetailsHtml(details) : ''}
       ${btn('View order', `${APP_URL}/orders/inbound`)}`)
   })
 }
 
-export async function sendInboundReceived(to: string, orderNumber: string, customerName?: string) {
-  const isStaff = !!customerName
+export async function sendInboundReceived(to: string, orderNumber: string, customerName: string, details?: OrderDetails) {
+  const isStaff = !!(customerName && details?.customerName !== customerName)
+  const custLabel = details?.customerName ?? customerName
   await dispatchEmail({
     from: FROM, to,
-    subject: isStaff ? `Inbound order ${orderNumber} marked received` : `Your shipment ${orderNumber} has arrived`,
-    html: baseLayout(
-      isStaff ? 'Inbound shipment received' : 'Shipment arrived at warehouse',
-      isStaff
-        ? `${p(`Inbound order <strong>${orderNumber}</strong> for <strong>${customerName}</strong> has been marked as received and is awaiting put-away.`)}${btn('View order', `${APP_URL}/orders/inbound`)}`
-        : `${p(`Your inbound shipment <strong>${orderNumber}</strong> has arrived at the warehouse and is being processed.`)}${btn('View order', `${APP_URL}/orders/inbound`)}`
+    subject: inboundSubj(orderNumber, custLabel, 'Received', details?.items),
+    html: baseLayout('Inbound shipment received',
+      customerName
+        ? `${p(`Inbound order <strong>${orderNumber}</strong> for <strong>${custLabel}</strong> has been marked as received and is awaiting put-away.`)}${details ? buildOrderDetailsHtml(details) : ''}${btn('View order', `${APP_URL}/orders/inbound`)}`
+        : `${p(`Your inbound shipment <strong>${orderNumber}</strong> has arrived at the warehouse and is being processed.`)}${details ? buildOrderDetailsHtml(details) : ''}${btn('View order', `${APP_URL}/orders/inbound`)}`
     )
   })
 }
 
-export async function sendInboundPutAway(to: string, orderNumber: string, customerName?: string) {
-  const isStaff = !!customerName
+export async function sendInboundPutAway(to: string, orderNumber: string, customerName: string, details?: OrderDetails) {
+  const custLabel = details?.customerName ?? customerName
   await dispatchEmail({
     from: FROM, to,
-    subject: isStaff ? `Inbound order ${orderNumber} put away` : `Your shipment ${orderNumber} has been put away`,
-    html: baseLayout(
-      isStaff ? 'Inbound order put away' : 'Shipment received & put away',
-      isStaff
-        ? `${p(`Inbound order <strong>${orderNumber}</strong> for <strong>${customerName}</strong> has been put away. Inventory has been updated.`)}${btn('View order', `${APP_URL}/orders/inbound`)}`
-        : `${p(`Your inbound order <strong>${orderNumber}</strong> has been received and put away. Your inventory has been updated.`)}${btn('View inventory', `${APP_URL}/inventory`)}`
+    subject: inboundSubj(orderNumber, custLabel, 'Put away', details?.items),
+    html: baseLayout('Inbound order put away',
+      customerName
+        ? `${p(`Inbound order <strong>${orderNumber}</strong> for <strong>${custLabel}</strong> has been put away. Inventory has been updated.`)}${details ? buildOrderDetailsHtml(details) : ''}${btn('View order', `${APP_URL}/orders/inbound`)}`
+        : `${p(`Your inbound order <strong>${orderNumber}</strong> has been received and put away. Your inventory has been updated.`)}${details ? buildOrderDetailsHtml(details) : ''}${btn('View inventory', `${APP_URL}/inventory`)}`
     )
   })
 }
@@ -274,7 +325,7 @@ export async function sendOutboundSubmitted(to: string, orderNumber: string, cus
     : p(`Your outbound order <strong>${orderNumber}</strong> has been submitted. The warehouse will begin processing it shortly.`)
   await dispatchEmail({
     from: FROM, to,
-    subject: isStaff ? `New outbound order ${orderNumber} — ${customerName}` : `Outbound order ${orderNumber} submitted`,
+    subject: outboundSubj(orderNumber, details ?? (customerName ? { customerName } : undefined), 'Submitted'),
     html: baseLayout(isStaff ? 'New outbound order received' : 'Order submitted',
       `${intro}${details ? buildOrderDetailsHtml(details) : ''}${btn('View order', `${APP_URL}/orders/outbound`)}`)
   })
@@ -287,7 +338,7 @@ export async function sendOutboundPicked(to: string, orderNumber: string, custom
     : p(`Your outbound order <strong>${orderNumber}</strong> is currently being picked at the warehouse.`)
   await dispatchEmail({
     from: FROM, to,
-    subject: isStaff ? `Outbound order ${orderNumber} picked` : `Your order ${orderNumber} is being picked`,
+    subject: outboundSubj(orderNumber, details ?? (customerName ? { customerName } : undefined), 'Picked'),
     html: baseLayout(isStaff ? 'Outbound order picked' : 'Order being picked',
       `${intro}${details ? buildOrderDetailsHtml(details) : ''}${btn('View order', `${APP_URL}/orders/outbound`)}`)
   })
@@ -300,7 +351,7 @@ export async function sendOutboundPacked(to: string, orderNumber: string, custom
     : p(`Your outbound order <strong>${orderNumber}</strong> has been packed and is ready for shipment.`)
   await dispatchEmail({
     from: FROM, to,
-    subject: isStaff ? `Outbound order ${orderNumber} packed` : `Your order ${orderNumber} has been packed`,
+    subject: outboundSubj(orderNumber, details ?? (customerName ? { customerName } : undefined), 'Packed'),
     html: baseLayout(isStaff ? 'Outbound order packed' : 'Order packed & ready to ship',
       `${intro}${details ? buildOrderDetailsHtml(details) : ''}${btn('View order', `${APP_URL}/orders/outbound`)}`)
   })
@@ -317,7 +368,7 @@ export async function sendOutboundShipped(to: string, orderNumber: string, track
     : tracking ? { trackingNumber: tracking } : undefined
   await dispatchEmail({
     from: FROM, to,
-    subject: isStaff ? `Outbound order ${orderNumber} shipped` : `Your order ${orderNumber} has been shipped`,
+    subject: outboundSubj(orderNumber, merged ?? (customerName ? { customerName } : undefined), 'Shipped'),
     html: baseLayout(isStaff ? 'Outbound order shipped' : 'Order shipped',
       `${intro}${merged ? buildOrderDetailsHtml(merged) : ''}${btn('View order', `${APP_URL}/orders/outbound`)}`)
   })
@@ -333,7 +384,9 @@ export async function sendOrderUpdated(to: string, orderNumber: string, orderTyp
     : p(`Your ${typeLabel} order <strong>${orderNumber}</strong> has been updated. Please review the changes.`)
   await dispatchEmail({
     from: FROM, to,
-    subject: isStaff ? `Order ${orderNumber} has been updated` : `Your ${typeLabel} order ${orderNumber} has been updated`,
+    subject: typeLabel === 'outbound'
+      ? outboundSubj(orderNumber, details ?? (customerName ? { customerName } : undefined), 'Updated')
+      : inboundSubj(orderNumber, customerName ?? '', 'Updated'),
     html: baseLayout('Order updated',
       `${intro}${typeLabel === 'outbound' && details ? buildOrderDetailsHtml(details) : ''}${btn('View order', `${APP_URL}/orders/${typeLabel}`)}`)
   })
@@ -344,7 +397,9 @@ export async function sendOrderCancelled(to: string, orderNumber: string, orderT
   const typeLabel = orderType === 'inbound' ? 'inbound' : 'outbound'
   await dispatchEmail({
     from: FROM, to,
-    subject: isStaff ? `Order ${orderNumber} cancelled` : `Your ${typeLabel} order ${orderNumber} has been cancelled`,
+    subject: typeLabel === 'outbound'
+      ? outboundSubj(orderNumber, customerName ? { customerName } : undefined, 'Cancelled')
+      : inboundSubj(orderNumber, customerName ?? '', 'Cancelled'),
     html: baseLayout('Order cancelled',
       isStaff
         ? `${p(`${typeLabel.charAt(0).toUpperCase() + typeLabel.slice(1)} order <strong>${orderNumber}</strong> for <strong>${customerName}</strong> has been cancelled.`)}${btn('View orders', `${APP_URL}/orders/${typeLabel}`)}`
@@ -363,13 +418,7 @@ export async function sendConsigneeOrderConfirmation(
   trackUrl: string,
   replyTo?: string,
 ) {
-  // Subject: Outbound order {Customer} {Consignee} {RefType} {RefNumber}
-  const subjectParts = ['Outbound order']
-  if (details.customerName) subjectParts.push(details.customerName)
-  if (consigneeName)        subjectParts.push(consigneeName)
-  if (details.referenceType)   subjectParts.push(details.referenceType)
-  if (details.referenceNumber) subjectParts.push(details.referenceNumber)
-  const subject = subjectParts.join(' ')
+  const subject = outboundSubj(orderNumber, { ...details, consigneeName }, 'Incoming shipment')
 
   const body = `
     ${p(`An outbound order <strong>${orderNumber}</strong> has been placed for delivery to <strong>${consigneeName}</strong>.`)}
@@ -399,7 +448,7 @@ export async function sendConsigneeOrderShipped(
   await dispatchEmail({
     from: FROM, to,
     ...(replyTo ? { reply_to: replyTo } : {}),
-    subject: `Your shipment ${orderNumber} is on its way`,
+    subject: outboundSubj(orderNumber, { ...details, consigneeName }, 'Shipped'),
     html: consigneeLayout('Your shipment has been dispatched', body, trackUrl ?? APP_URL),
   })
 }
@@ -422,7 +471,7 @@ export async function sendConsigneeOrderUpdated(
   await dispatchEmail({
     from: FROM, to,
     ...(replyTo ? { reply_to: replyTo } : {}),
-    subject: `Update on your incoming shipment ${orderNumber}`,
+    subject: outboundSubj(orderNumber, { ...details, consigneeName }, status.replace(/_/g, ' ')),
     html: consigneeLayout('Shipment update', body, trackUrl ?? APP_URL),
   })
 }
