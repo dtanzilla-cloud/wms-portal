@@ -10,7 +10,7 @@ export async function POST(req: NextRequest) {
     const files = formData.getAll('files') as File[]
 
     if (!orderNumber) return NextResponse.json({ error: 'Missing orderNumber' }, { status: 400 })
-    if (!files.length) return NextResponse.json({ error: 'No files provided' }, { status: 400 })
+    if (!files.length && !message.trim()) return NextResponse.json({ error: 'Please add a message or attach a file' }, { status: 400 })
 
     const supabase = createAdminClient()
 
@@ -83,12 +83,16 @@ export async function POST(req: NextRequest) {
       .in('role', ['admin', 'warehouse_staff'])
     const staffEmails = (staffProfiles ?? []).map((p: any) => p.email).filter(Boolean)
 
-    if (staffEmails.length > 0 && uploaded.length > 0) {
+    if (staffEmails.length > 0 && (uploaded.length > 0 || message.trim())) {
       const { Resend } = await import('resend')
       const resend = new Resend(process.env.RESEND_API_KEY)
       const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000'
       const fromEmail = process.env.RESEND_FROM_EMAIL ?? `CTS Portal <noreply@yourdomain.com>`
       const fileList = uploaded.map(f => `<li>${f.filename}</li>`).join('')
+      const filesSection = uploaded.length > 0
+        ? `<p style="color:#475569;font-size:14px;line-height:1.6;margin:12px 0 4px">Attached files (${uploaded.length}):</p>
+           <ul style="color:#374151;font-size:13px;margin:0;padding-left:20px">${fileList}</ul>`
+        : ''
 
       for (const email of staffEmails) {
         await resend.emails.send({
@@ -105,8 +109,7 @@ export async function POST(req: NextRequest) {
     <h2 style="margin:0 0 12px;font-size:18px;color:#1e293b">Consignee reply on ${orderNumber}</h2>
     <p style="color:#475569;font-size:14px;line-height:1.6;margin:0 0 8px"><strong>${senderName}</strong> replied to order <strong>${orderNumber}</strong>.</p>
     ${message ? `<p style="color:#475569;font-size:14px;line-height:1.6;background:#f8fafc;padding:12px 16px;border-radius:6px;border-left:3px solid #3b82f6">${message}</p>` : ''}
-    <p style="color:#475569;font-size:14px;line-height:1.6;margin:12px 0 4px">Attached files (${uploaded.length}):</p>
-    <ul style="color:#374151;font-size:13px;margin:0;padding-left:20px">${fileList}</ul>
+    ${filesSection}
     <a href="${APP_URL}/orders/outbound" style="display:inline-block;margin-top:16px;padding:10px 20px;background:#2563eb;color:#fff;border-radius:6px;text-decoration:none;font-size:14px;font-weight:500">View order</a>
     <div style="margin-top:28px;padding-top:20px;border-top:1px solid #f1f5f9;font-size:12px;color:#94a3b8">
       CTS Portal · <a href="${APP_URL}" style="color:#3b82f6">Go to portal</a>

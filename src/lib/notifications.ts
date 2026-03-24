@@ -56,9 +56,9 @@ function addrCell(label: string, address: string) {
 
 /**
  * Builds a rich order details block — fully email-safe (table-only layout).
- * includeWarehouse = true for consignee emails; false for staff/customer.
+ * Warehouse address is shown in all emails by default.
  */
-function buildOrderDetailsHtml(d: OrderDetails, includeWarehouse = false): string {
+function buildOrderDetailsHtml(d: OrderDetails, includeWarehouse = true): string {
   const parts: string[] = []
 
   // Two-column address row
