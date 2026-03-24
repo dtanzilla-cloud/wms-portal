@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import {
+  OrderDetails,
   sendInboundSubmitted,
   sendInboundSubmittedCustomer,
   sendInboundReceived,
@@ -34,17 +35,17 @@ export async function POST(req: NextRequest) {
 
       if (!order) return NextResponse.json({ error: 'Order not found' }, { status: 404 })
 
-      // Warehouse address for consignee emails
-      const { data: warehouseSettings } = await supabase
+      // Warehouse address
+      const { data: ws } = await supabase
         .from('company_settings')
         .select('warehouse_name, address_line1, address_line2, city, state, postal_code, country, phone, email')
         .eq('id', 1)
         .single()
-      const warehouseAddress = warehouseSettings
-        ? [warehouseSettings.warehouse_name, warehouseSettings.address_line1, warehouseSettings.address_line2, warehouseSettings.city, warehouseSettings.state, warehouseSettings.postal_code].filter(Boolean).join(', ')
+      const warehouseAddress = ws
+        ? [ws.warehouse_name, ws.address_line1, ws.address_line2, ws.city, ws.state, ws.postal_code].filter(Boolean).join(', ')
         : ''
 
-      // Fetch order documents to include in consignee email
+      // Fetch order documents (exclude consignee uploads) and get signed URLs
       const { data: orderDocuments } = await supabase
         .from('documents')
         .select('filename, storage_path')
@@ -59,7 +60,7 @@ export async function POST(req: NextRequest) {
         documents.push({ filename: doc.filename, url: signed?.signedUrl })
       }
 
-      // Consignee
+      // Consignee info
       const trackUrl = `${process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000'}/track/${order.order_number}`
       const consigneeEmail = (order.consignees as any)?.contact_email ?? null
       const consigneeName = (order.consignees as any)?.company_name ?? ''
@@ -74,101 +75,100 @@ export async function POST(req: NextRequest) {
         unit: i.skus?.unit ?? '',
       }))
 
-      // Use admin profile emails from the database, fall back to env var
+      // Staff emails
       const { data: admins } = await supabase
         .from('profiles')
         .select('email')
         .in('role', ['admin', 'warehouse_staff'])
       const adminEmails = (admins ?? []).map((p: any) => p.email).filter(Boolean)
-      const staffEmail = adminEmails.length > 0
-        ? adminEmails[0]
-        : (process.env.STAFF_NOTIFICATION_EMAIL || process.env.NEXT_PUBLIC_STAFF_EMAIL)
-      const staffEmails = adminEmails.length > 0
-        ? adminEmails
-        : staffEmail ? [staffEmail] : []
+      const fallbackStaff = process.env.STAFF_NOTIFICATION_EMAIL || process.env.NEXT_PUBLIC_STAFF_EMAIL
+      const staffEmails = adminEmails.length > 0 ? adminEmails : fallbackStaff ? [fallbackStaff] : []
 
-      // Get all login emails for users linked to this customer
+      // Customer emails
       const { data: customerProfiles } = await supabase
         .from('profiles')
         .select('email')
         .eq('customer_id', order.customer_id)
       const customerEmails = (customerProfiles ?? []).map((p: any) => p.email).filter(Boolean)
-      // Fall back to billing_email if no profiles found
-      const customerEmail = customerEmails.length > 0
-        ? customerEmails[0]
-        : order.customers?.billing_email
       const customerName = order.customers?.name ?? ''
       const orderNumber = order.order_number
-
-      const sends: Promise<any>[] = []
-
-      if (type === 'inbound_submitted') {
-        staffEmails.forEach(e => sends.push(sendInboundSubmitted(e, orderNumber, customerName)))
-        customerEmails.forEach(e => sends.push(sendInboundSubmittedCustomer(e, orderNumber)))
-      }
-
-      if (type === 'inbound_received') {
-        customerEmails.forEach(e => sends.push(sendInboundReceived(e, orderNumber)))
-        staffEmails.forEach(e => sends.push(sendInboundReceived(e, orderNumber, customerName)))
-      }
-
-      if (type === 'inbound_put_away') {
-        customerEmails.forEach(e => sends.push(sendInboundPutAway(e, orderNumber)))
-        staffEmails.forEach(e => sends.push(sendInboundPutAway(e, orderNumber, customerName)))
-      }
 
       const replyTo = staffEmails[0] ?? undefined
       const referenceType: string | undefined = order.reference_type ?? undefined
       const referenceNumber: string | undefined = order.reference_number ?? undefined
 
+      // ── Build shared OrderDetails object ──────────────────────────────────
+      const orderDetails: OrderDetails = {
+        consigneeName,
+        deliveryAddress,
+        warehouseAddress,
+        referenceType,
+        referenceNumber,
+        shipByDate: order.ship_by_date ?? undefined,
+        palletCount: order.pallet_count ?? undefined,
+        palletWeightKg: order.pallet_weight_kg ?? undefined,
+        palletDimensions: order.pallet_dimensions ?? undefined,
+        carrier: order.carrier ?? undefined,
+        trackingNumber: order.tracking_number ?? undefined,
+        items: orderItems,
+        documents,
+      }
+
+      const sends: Promise<any>[] = []
+
+      // ── Inbound ───────────────────────────────────────────────────────────
+      if (type === 'inbound_submitted') {
+        staffEmails.forEach(e => sends.push(sendInboundSubmitted(e, orderNumber, customerName)))
+        customerEmails.forEach(e => sends.push(sendInboundSubmittedCustomer(e, orderNumber)))
+      }
+      if (type === 'inbound_received') {
+        customerEmails.forEach(e => sends.push(sendInboundReceived(e, orderNumber)))
+        staffEmails.forEach(e => sends.push(sendInboundReceived(e, orderNumber, customerName)))
+      }
+      if (type === 'inbound_put_away') {
+        customerEmails.forEach(e => sends.push(sendInboundPutAway(e, orderNumber)))
+        staffEmails.forEach(e => sends.push(sendInboundPutAway(e, orderNumber, customerName)))
+      }
+
+      // ── Outbound ──────────────────────────────────────────────────────────
       if (type === 'outbound_submitted') {
-        staffEmails.forEach(e => sends.push(sendOutboundSubmitted(e, orderNumber, customerName)))
-        customerEmails.forEach(e => sends.push(sendOutboundSubmitted(e, orderNumber)))
-        if (consigneeEmail) sends.push(sendConsigneeOrderConfirmation(consigneeEmail, orderNumber, consigneeName, orderItems, deliveryAddress, warehouseAddress, trackUrl, referenceType, referenceNumber, replyTo, order.ship_by_date ?? undefined, order.pallet_count ?? undefined, order.pallet_weight_kg ?? undefined, order.pallet_dimensions ?? undefined, documents))
+        staffEmails.forEach(e => sends.push(sendOutboundSubmitted(e, orderNumber, customerName, orderDetails)))
+        customerEmails.forEach(e => sends.push(sendOutboundSubmitted(e, orderNumber, undefined, orderDetails)))
+        if (consigneeEmail) sends.push(sendConsigneeOrderConfirmation(consigneeEmail, orderNumber, consigneeName, orderDetails, trackUrl, referenceType, referenceNumber, replyTo))
       }
-
       if (type === 'outbound_picked') {
-        customerEmails.forEach(e => sends.push(sendOutboundPicked(e, orderNumber)))
-        staffEmails.forEach(e => sends.push(sendOutboundPicked(e, orderNumber, customerName)))
-        if (consigneeEmail) sends.push(sendConsigneeOrderUpdated(consigneeEmail, orderNumber, consigneeName, 'picked', trackUrl, replyTo))
+        staffEmails.forEach(e => sends.push(sendOutboundPicked(e, orderNumber, customerName, orderDetails)))
+        customerEmails.forEach(e => sends.push(sendOutboundPicked(e, orderNumber, undefined, orderDetails)))
+        if (consigneeEmail) sends.push(sendConsigneeOrderUpdated(consigneeEmail, orderNumber, consigneeName, 'picked', orderDetails, trackUrl, replyTo))
       }
-
       if (type === 'outbound_packed') {
-        customerEmails.forEach(e => sends.push(sendOutboundPacked(e, orderNumber)))
-        staffEmails.forEach(e => sends.push(sendOutboundPacked(e, orderNumber, customerName)))
-        if (consigneeEmail) sends.push(sendConsigneeOrderUpdated(consigneeEmail, orderNumber, consigneeName, 'packed', trackUrl, replyTo))
+        staffEmails.forEach(e => sends.push(sendOutboundPacked(e, orderNumber, customerName, orderDetails)))
+        customerEmails.forEach(e => sends.push(sendOutboundPacked(e, orderNumber, undefined, orderDetails)))
+        if (consigneeEmail) sends.push(sendConsigneeOrderUpdated(consigneeEmail, orderNumber, consigneeName, 'packed', orderDetails, trackUrl, replyTo))
       }
-
       if (type === 'outbound_shipped') {
-        customerEmails.forEach(e => sends.push(sendOutboundShipped(e, orderNumber, order.tracking_number ?? undefined)))
-        staffEmails.forEach(e => sends.push(sendOutboundShipped(e, orderNumber, order.tracking_number ?? undefined, customerName)))
-        if (consigneeEmail) sends.push(sendConsigneeOrderShipped(consigneeEmail, orderNumber, consigneeName, order.tracking_number ?? undefined, order.carrier ?? undefined, warehouseAddress, trackUrl, replyTo))
+        staffEmails.forEach(e => sends.push(sendOutboundShipped(e, orderNumber, order.tracking_number ?? undefined, customerName, orderDetails)))
+        customerEmails.forEach(e => sends.push(sendOutboundShipped(e, orderNumber, order.tracking_number ?? undefined, undefined, orderDetails)))
+        if (consigneeEmail) sends.push(sendConsigneeOrderShipped(consigneeEmail, orderNumber, consigneeName, orderDetails, trackUrl, replyTo))
       }
-
       if (type === 'order_updated') {
-        customerEmails.forEach(e => sends.push(sendOrderUpdated(e, orderNumber, order.order_type)))
-        staffEmails.forEach(e => sends.push(sendOrderUpdated(e, orderNumber, order.order_type, customerName)))
-        if (consigneeEmail && order.order_type === 'outbound') sends.push(sendConsigneeOrderUpdated(consigneeEmail, orderNumber, consigneeName, 'updated', trackUrl, replyTo))
+        staffEmails.forEach(e => sends.push(sendOrderUpdated(e, orderNumber, order.order_type, customerName, order.order_type === 'outbound' ? orderDetails : undefined)))
+        customerEmails.forEach(e => sends.push(sendOrderUpdated(e, orderNumber, order.order_type, undefined, order.order_type === 'outbound' ? orderDetails : undefined)))
+        if (consigneeEmail && order.order_type === 'outbound') sends.push(sendConsigneeOrderUpdated(consigneeEmail, orderNumber, consigneeName, 'updated', orderDetails, trackUrl, replyTo))
       }
-
       if (type === 'order_cancelled') {
-        customerEmails.forEach(e => sends.push(sendOrderCancelled(e, orderNumber, order.order_type)))
         staffEmails.forEach(e => sends.push(sendOrderCancelled(e, orderNumber, order.order_type, customerName)))
-        if (consigneeEmail && order.order_type === 'outbound') sends.push(sendConsigneeOrderUpdated(consigneeEmail, orderNumber, consigneeName, 'cancelled', trackUrl, replyTo))
+        customerEmails.forEach(e => sends.push(sendOrderCancelled(e, orderNumber, order.order_type)))
+        if (consigneeEmail && order.order_type === 'outbound') sends.push(sendConsigneeOrderUpdated(consigneeEmail, orderNumber, consigneeName, 'cancelled', orderDetails, trackUrl, replyTo))
       }
 
       const results = await Promise.allSettled(sends)
       const debug = {
-        type,
-        order_id,
-        orderNumber,
-        staffEmails,
-        customerEmails,
-        consigneeEmail,
+        type, order_id, orderNumber, staffEmails, customerEmails, consigneeEmail,
         sendsQueued: sends.length,
         results: results.map((r, i) =>
           r.status === 'fulfilled'
-            ? { i, ok: true, data: r.value }
+            ? { i, ok: true }
             : { i, ok: false, error: r.reason?.message ?? String(r.reason) }
         ),
       }
@@ -182,12 +182,9 @@ export async function POST(req: NextRequest) {
         .select('*, orders(order_number, customers(billing_email))')
         .eq('id', document_id)
         .single()
-
       if (doc && type === 'document_uploaded') {
         const email = (doc.orders as any)?.customers?.billing_email
-        if (email) {
-          await sendDocumentUploaded(email, (doc.orders as any)?.order_number, doc.filename)
-        }
+        if (email) await sendDocumentUploaded(email, (doc.orders as any)?.order_number, doc.filename)
       }
     }
 
