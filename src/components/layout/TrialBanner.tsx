@@ -14,7 +14,7 @@ export default function TrialBanner({ trialEndsAt, expired }: Props) {
         <AlertTriangle size={16} className="shrink-0" />
         <div className="flex-1">
           <p className="text-sm font-medium">Your trial expired on {endsDate}</p>
-          <p className="text-xs opacity-90">Your account is now read-only. Contact us to continue using WMS Portal.</p>
+          <p className="text-xs opacity-90">Your account is now read-only. Contact us to continue using CTS Portal.</p>
         </div>
         <a href="mailto:hello@mondayseed.com" className="shrink-0 bg-white text-red-600 text-xs font-medium px-3 py-1.5 rounded-md hover:bg-red-50 transition-colors">
           Contact us

@@ -1,6 +1,7 @@
 import { createAdminClient } from '@/lib/supabase/server'
 import { notFound } from 'next/navigation'
 import { CheckCircle, Package, MapPin, Truck } from 'lucide-react'
+import ConsigneeUploadForm from '@/components/track/ConsigneeUploadForm'
 
 export default async function TrackingPage({ params }: { params: { orderNumber: string } }) {
   const supabase = createAdminClient()
@@ -23,7 +24,7 @@ export default async function TrackingPage({ params }: { params: { orderNumber: 
     <div style={{ margin: 0, padding: 0, background: '#f8fafc', fontFamily: 'Inter, system-ui, sans-serif', minHeight: '100vh' }}>
       {/* Header */}
       <div style={{ background: '#1d4ed8', padding: '16px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        <span style={{ color: '#fff', fontSize: '16px', fontWeight: 600 }}>WMS Portal</span>
+        <span style={{ color: '#fff', fontSize: '16px', fontWeight: 600 }}>CTS Portal</span>
         <span style={{ color: '#bfdbfe', fontSize: '13px' }}>Shipment Tracking</span>
       </div>
 
@@ -204,9 +205,12 @@ export default async function TrackingPage({ params }: { params: { orderNumber: 
           </div>
         )}
 
+        {/* Consignee reply / upload */}
+        <ConsigneeUploadForm orderNumber={params.orderNumber} />
+
         {/* Footer */}
         <p style={{ textAlign: 'center', fontSize: '12px', color: '#94a3b8', marginTop: '32px' }}>
-          WMS Portal · Shipment tracking for {params.orderNumber}
+          CTS Portal · Shipment tracking for {params.orderNumber}
         </p>
       </div>
     </div>

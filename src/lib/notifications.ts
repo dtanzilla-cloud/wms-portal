@@ -8,9 +8,9 @@ function getFrom() {
   if (process.env.RESEND_FROM_EMAIL) return process.env.RESEND_FROM_EMAIL
   try {
     const host = new URL(APP_URL.startsWith('http') ? APP_URL : `https://${APP_URL}`).hostname
-    return `WMS Portal <noreply@${host}>`
+    return `CTS Portal <noreply@${host}>`
   } catch {
-    return `WMS Portal <noreply@yourdomain.com>`
+    return `CTS Portal <noreply@yourdomain.com>`
   }
 }
 const FROM = getFrom()
@@ -20,13 +20,13 @@ function baseLayout(title: string, body: string) {
 <!DOCTYPE html><html><body style="margin:0;padding:0;background:#f8fafc;font-family:Inter,system-ui,sans-serif">
 <div style="max-width:560px;margin:40px auto;background:#fff;border:1px solid #e2e8f0;border-radius:8px;overflow:hidden">
   <div style="background:#1d4ed8;padding:20px 28px">
-    <span style="color:#fff;font-size:16px;font-weight:600">WMS Portal</span>
+    <span style="color:#fff;font-size:16px;font-weight:600">CTS Portal</span>
   </div>
   <div style="padding:28px">
     <h2 style="margin:0 0 12px;font-size:18px;color:#1e293b">${title}</h2>
     ${body}
     <div style="margin-top:28px;padding-top:20px;border-top:1px solid #f1f5f9;font-size:12px;color:#94a3b8">
-      WMS Portal · <a href="${APP_URL}" style="color:#3b82f6">Go to portal</a>
+      CTS Portal · <a href="${APP_URL}" style="color:#3b82f6">Go to portal</a>
     </div>
   </div>
 </div>
@@ -42,7 +42,7 @@ function consigneeLayout(title: string, body: string, trackUrl: string) {
 <!DOCTYPE html><html><body style="margin:0;padding:0;background:#f8fafc;font-family:Inter,system-ui,sans-serif">
 <div style="max-width:560px;margin:40px auto;background:#fff;border:1px solid #e2e8f0;border-radius:8px;overflow:hidden">
   <div style="background:#1d4ed8;padding:20px 28px">
-    <span style="color:#fff;font-size:16px;font-weight:600">WMS Portal</span>
+    <span style="color:#fff;font-size:16px;font-weight:600">CTS Portal</span>
   </div>
   <div style="padding:28px">
     <h2 style="margin:0 0 12px;font-size:18px;color:#1e293b">${title}</h2>
@@ -226,6 +226,9 @@ export async function sendConsigneeOrderConfirmation(
   deliveryAddress: string,
   warehouseAddress: string,
   trackUrl: string,
+  referenceType?: string,
+  referenceNumber?: string,
+  replyTo?: string,
 ) {
   const rows = items.map(i =>
     `<tr>
@@ -235,9 +238,13 @@ export async function sendConsigneeOrderConfirmation(
     </tr>`
   ).join('')
 
+  const refPart = referenceType && referenceNumber ? ` ${referenceType} ${referenceNumber}` : ''
+  const subject = `Outbound order ${consigneeName}${refPart}`
+
   await resend.emails.send({
     from: FROM, to,
-    subject: `Incoming shipment ${orderNumber} — Order confirmation`,
+    ...(replyTo ? { reply_to: replyTo } : {}),
+    subject,
     html: consigneeLayout('Incoming shipment confirmation',
       `${p(`An outbound order <strong>${orderNumber}</strong> has been placed for delivery to <strong>${consigneeName}</strong>.`)}
       <table style="width:100%;border-collapse:collapse;font-size:13px;margin:16px 0">
@@ -265,9 +272,11 @@ export async function sendConsigneeOrderShipped(
   carrier?: string,
   warehouseAddress?: string,
   trackUrl?: string,
+  replyTo?: string,
 ) {
   await resend.emails.send({
     from: FROM, to,
+    ...(replyTo ? { reply_to: replyTo } : {}),
     subject: `Your shipment ${orderNumber} is on its way`,
     html: consigneeLayout('Your shipment has been dispatched',
       `${p(`Order <strong>${orderNumber}</strong> has been dispatched and is on its way to <strong>${consigneeName}</strong>.`)}
@@ -285,10 +294,12 @@ export async function sendConsigneeOrderUpdated(
   consigneeName: string,
   status: string,
   trackUrl?: string,
+  replyTo?: string,
 ) {
   const statusLabel = status.replace(/_/g, ' ')
   await resend.emails.send({
     from: FROM, to,
+    ...(replyTo ? { reply_to: replyTo } : {}),
     subject: `Update on your incoming shipment ${orderNumber}`,
     html: consigneeLayout('Shipment update',
       `${p(`Your incoming shipment <strong>${orderNumber}</strong> for <strong>${consigneeName}</strong> has been updated.`)}
@@ -315,7 +326,7 @@ export async function sendTrialReminder(to: string, name: string, daysLeft: numb
     from: FROM, to,
     subject: `Your WMS trial expires in ${daysLeft} day${daysLeft !== 1 ? 's' : ''}`,
     html: baseLayout('Your trial is ending soon',
-      `${p(`Hi ${name}, your WMS Portal trial expires in <strong>${daysLeft} day${daysLeft !== 1 ? 's' : ''}</strong>. Contact us to continue using the platform.`)}
+      `${p(`Hi ${name}, your CTS Portal trial expires in <strong>${daysLeft} day${daysLeft !== 1 ? 's' : ''}</strong>. Contact us to continue using the platform.`)}
       ${btn('Go to portal', APP_URL)}`)
   })
 }
