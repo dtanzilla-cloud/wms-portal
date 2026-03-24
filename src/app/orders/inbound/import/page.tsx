@@ -16,8 +16,7 @@ interface ParsedRow {
   reference_number: string
   sku_code: string
   quantity: string
-  carton_count: string
-  units_per_carton: string
+  storage_unit: string
   lot_number: string
   valid: boolean
   error?: string
@@ -57,7 +56,7 @@ function parseCSV(text: string): ParsedRow[] {
     const [
       order_ref, expected_date, pallet_count, carrier, tracking_number,
       notes, reference_type, reference_number, sku_code, quantity,
-      carton_count, units_per_carton, lot_number,
+      storage_unit, lot_number,
     ] = cols
 
     const refType = (reference_type ?? '').toLowerCase().trim()
@@ -79,8 +78,7 @@ function parseCSV(text: string): ParsedRow[] {
       reference_number: (reference_number ?? '').trim(),
       sku_code: (sku_code ?? '').toUpperCase().trim(),
       quantity: (quantity ?? '').trim(),
-      carton_count: (carton_count ?? '').trim(),
-      units_per_carton: (units_per_carton ?? '').trim(),
+      storage_unit: (storage_unit ?? '').trim(),
       lot_number: (lot_number ?? '').trim(),
       valid: !error,
       error,
@@ -113,10 +111,10 @@ function groupRows(rows: ParsedRow[]): OrderGroup[] {
 }
 
 const TEMPLATE_CSV =
-  `order_ref,expected_date,pallet_count,carrier,tracking_number,notes,reference_type,reference_number,sku_code,quantity,carton_count,units_per_carton,lot_number\n` +
-  `PO-001,2024-02-01,3,FedEx Freight,PRO123456,,po_number,PO-001,ABC-001,100,10,10,LOT-2024-001\n` +
-  `PO-001,,,,,,,,,ABC-002,50,5,10,LOT-2024-002\n` +
-  `SHIP-002,2024-02-05,2,UPS Freight,1Z999,,bl_number,BL-9988,XYZ-001,200,,,`
+  `order_ref,expected_date,pallet_count,carrier,tracking_number,notes,reference_type,reference_number,sku_code,quantity,storage_unit,lot_number\n` +
+  `PO-001,2024-02-01,3,FedEx Freight,PRO123456,,po_number,PO-001,ABC-001,100,Carton,LOT-2024-001\n` +
+  `PO-001,,,,,,,,,ABC-002,50,Pallet,LOT-2024-002\n` +
+  `SHIP-002,2024-02-05,2,UPS Freight,1Z999,,bl_number,BL-9988,XYZ-001,200,,`
 const TEMPLATE_URL = `data:text/csv;charset=utf-8,${encodeURIComponent(TEMPLATE_CSV)}`
 
 export default function ImportInboundOrdersPage() {
@@ -201,8 +199,7 @@ export default function ImportInboundOrdersPage() {
             order_id: order.id,
             sku_id: skuMap[it.sku_code],
             quantity: Number(it.quantity),
-            carton_count: it.carton_count ? Number(it.carton_count) : null,
-            units_per_carton: it.units_per_carton ? Number(it.units_per_carton) : null,
+            storage_unit: it.storage_unit || null,
             lot_number: it.lot_number || null,
           }))
         )
@@ -254,7 +251,7 @@ export default function ImportInboundOrdersPage() {
         </div>
         <div className="mt-3 bg-gray-50 rounded-md p-3 overflow-x-auto">
           <p className="text-xs font-mono text-gray-500 whitespace-nowrap">
-            order_ref*, expected_date (YYYY-MM-DD), pallet_count, carrier, tracking_number, notes, reference_type (po_number/bl_number/other), reference_number, sku_code*, quantity*, carton_count, units_per_carton, lot_number
+            order_ref*, expected_date (YYYY-MM-DD), pallet_count, carrier, tracking_number, notes, reference_type (po_number/bl_number/other), reference_number, sku_code*, quantity*, storage_unit, lot_number
           </p>
         </div>
       </div>
@@ -301,6 +298,7 @@ export default function ImportInboundOrdersPage() {
                       <th className="px-3 py-2 text-left font-medium text-gray-500">Expected</th>
                       <th className="px-3 py-2 text-left font-medium text-gray-500">SKU Code</th>
                       <th className="px-3 py-2 text-right font-medium text-gray-500">Qty</th>
+                      <th className="px-3 py-2 text-left font-medium text-gray-500">Storage unit</th>
                       <th className="px-3 py-2 text-left font-medium text-gray-500">Lot #</th>
                       <th className="px-3 py-2 text-left font-medium text-gray-500">Carrier</th>
                       <th className="px-3 py-2 text-left font-medium text-gray-500">Ref #</th>
@@ -318,6 +316,7 @@ export default function ImportInboundOrdersPage() {
                         <td className="px-3 py-2 text-gray-500">{row.expected_date || '—'}</td>
                         <td className="px-3 py-2 font-mono text-gray-700">{row.sku_code}</td>
                         <td className="px-3 py-2 text-right text-gray-500">{row.quantity}</td>
+                        <td className="px-3 py-2 text-gray-500">{row.storage_unit || '—'}</td>
                         <td className="px-3 py-2 font-mono text-gray-500 text-xs">{row.lot_number || '—'}</td>
                         <td className="px-3 py-2 text-gray-500">{row.carrier || '—'}</td>
                         <td className="px-3 py-2 text-gray-500">{row.reference_number || '—'}</td>

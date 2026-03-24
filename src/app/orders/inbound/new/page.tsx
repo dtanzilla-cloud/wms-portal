@@ -6,7 +6,7 @@ import { createClient } from '@/lib/supabase/client'
 import { ArrowLeft, Plus, Trash2 } from 'lucide-react'
 
 interface SKUOption { id: string; sku_code: string; description: string; unit: string }
-interface ItemRow { sku_id: string; quantity: number; carton_count: string; units_per_carton: string; lot_number: string }
+interface ItemRow { sku_id: string; quantity: number; storage_unit: string; lot_number: string }
 
 export default function NewInboundOrderPage() {
   const router = useRouter()
@@ -23,7 +23,7 @@ export default function NewInboundOrderPage() {
   const [notes, setNotes] = useState('')
   const [carrier, setCarrier] = useState('')
   const [trackingNumber, setTrackingNumber] = useState('')
-  const [items, setItems] = useState<ItemRow[]>([{ sku_id: '', quantity: 1, carton_count: '', units_per_carton: '', lot_number: '' }])
+  const [items, setItems] = useState<ItemRow[]>([{ sku_id: '', quantity: 1, storage_unit: '', lot_number: '' }])
 
   const isStaff = profile?.role === 'warehouse_staff' || profile?.role === 'admin'
   const effectiveCustomerId = isStaff ? selectedCustomerId : profile?.customer_id
@@ -48,7 +48,7 @@ export default function NewInboundOrderPage() {
       .then(({ data }) => setSkus(data ?? []))
   }, [effectiveCustomerId])
 
-  function addItem() { setItems([...items, { sku_id: '', quantity: 1, carton_count: '', units_per_carton: '', lot_number: '' }]) }
+  function addItem() { setItems([...items, { sku_id: '', quantity: 1, storage_unit: '', lot_number: '' }]) }
   function removeItem(i: number) { setItems(items.filter((_, idx) => idx !== i)) }
   function updateItem(i: number, field: keyof ItemRow, value: string | number) {
     setItems(items.map((item, idx) => idx === i ? { ...item, [field]: value } : item))
@@ -79,8 +79,7 @@ export default function NewInboundOrderPage() {
       const { error: itemsErr } = await supabase.from('order_items').insert(
         validItems.map(it => ({
           order_id: order.id, sku_id: it.sku_id, quantity: Number(it.quantity),
-          carton_count: it.carton_count ? Number(it.carton_count) : null,
-          units_per_carton: it.units_per_carton ? Number(it.units_per_carton) : null,
+          storage_unit: it.storage_unit || null,
           lot_number: it.lot_number || null,
         }))
       )
@@ -167,6 +166,7 @@ export default function NewInboundOrderPage() {
           <div className="space-y-3">
             {items.map((item, i) => (
               <div key={i} className="grid grid-cols-12 gap-2 items-end">
+                {/* SKU */}
                 <div className="col-span-4">
                   {i === 0 && <label className="block text-xs font-medium text-gray-500 mb-1">SKU <span className="text-red-500">*</span></label>}
                   <select value={item.sku_id} onChange={e => updateItem(i, 'sku_id', e.target.value)} required
@@ -175,26 +175,32 @@ export default function NewInboundOrderPage() {
                     {skus.map(s => <option key={s.id} value={s.id}>{s.sku_code} — {s.description}</option>)}
                   </select>
                 </div>
+                {/* Qty */}
                 <div className="col-span-2">
                   {i === 0 && <label className="block text-xs font-medium text-gray-500 mb-1">Qty <span className="text-red-500">*</span></label>}
                   <input type="number" min="1" required value={item.quantity} onChange={e => updateItem(i, 'quantity', e.target.value)}
                     className="w-full px-2 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
                 </div>
+                {/* UOM — read-only, derived from selected SKU */}
                 <div className="col-span-1">
-                  {i === 0 && <label className="block text-xs font-medium text-gray-500 mb-1">Cartons</label>}
-                  <input type="number" min="0" value={item.carton_count} onChange={e => updateItem(i, 'carton_count', e.target.value)}
-                    placeholder="—" className="w-full px-2 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                  {i === 0 && <label className="block text-xs font-medium text-gray-500 mb-1">UOM</label>}
+                  <div className="w-full px-2 py-2 border border-gray-200 rounded-md text-sm bg-gray-50 text-gray-500 truncate">
+                    {skus.find(s => s.id === item.sku_id)?.unit || '—'}
+                  </div>
                 </div>
-                <div className="col-span-1">
-                  {i === 0 && <label className="block text-xs font-medium text-gray-500 mb-1">Units/ctn</label>}
-                  <input type="number" min="0" value={item.units_per_carton} onChange={e => updateItem(i, 'units_per_carton', e.target.value)}
-                    placeholder="—" className="w-full px-2 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                {/* Storage unit */}
+                <div className="col-span-2">
+                  {i === 0 && <label className="block text-xs font-medium text-gray-500 mb-1">Storage unit</label>}
+                  <input type="text" value={item.storage_unit} onChange={e => updateItem(i, 'storage_unit', e.target.value)}
+                    placeholder="Pallet / Box…" className="w-full px-2 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
                 </div>
-                <div className="col-span-3">
+                {/* Lot # */}
+                <div className="col-span-2">
                   {i === 0 && <label className="block text-xs font-medium text-gray-500 mb-1">Lot #</label>}
                   <input type="text" value={item.lot_number} onChange={e => updateItem(i, 'lot_number', e.target.value)}
                     placeholder="e.g. LOT-001" className="w-full px-2 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
                 </div>
+                {/* Remove */}
                 <div className="col-span-1 flex justify-end">
                   {items.length > 1 && (
                     <button type="button" onClick={() => removeItem(i)} className="text-gray-400 hover:text-red-500 transition-colors p-2">

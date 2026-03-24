@@ -91,8 +91,8 @@ export default async function InboundOrderDetailPage({ params }: { params: { id:
                   <th className="px-5 py-3 text-left text-xs font-medium text-gray-500">SKU</th>
                   <th className="px-5 py-3 text-left text-xs font-medium text-gray-500">Description</th>
                   <th className="px-5 py-3 text-right text-xs font-medium text-gray-500">Qty</th>
-                  <th className="px-5 py-3 text-right text-xs font-medium text-gray-500">Cartons</th>
-                  <th className="px-5 py-3 text-right text-xs font-medium text-gray-500">Units/ctn</th>
+                  <th className="px-5 py-3 text-left text-xs font-medium text-gray-500">UOM</th>
+                  <th className="px-5 py-3 text-left text-xs font-medium text-gray-500">Storage unit</th>
                   <th className="px-5 py-3 text-left text-xs font-medium text-gray-500">Lot #</th>
                 </tr>
               </thead>
@@ -102,8 +102,8 @@ export default async function InboundOrderDetailPage({ params }: { params: { id:
                     <td className="px-5 py-3 font-mono text-xs text-blue-700">{item.skus?.sku_code}</td>
                     <td className="px-5 py-3 text-gray-700">{item.skus?.description}</td>
                     <td className="px-5 py-3 text-right text-gray-800 font-medium">{item.quantity}</td>
-                    <td className="px-5 py-3 text-right text-gray-600">{item.carton_count ?? '—'}</td>
-                    <td className="px-5 py-3 text-right text-gray-600">{item.units_per_carton ?? '—'}</td>
+                    <td className="px-5 py-3 text-gray-500 text-xs">{item.skus?.unit ?? '—'}</td>
+                    <td className="px-5 py-3 text-gray-600">{item.storage_unit ?? '—'}</td>
                     <td className="px-5 py-3 text-gray-600 font-mono text-xs">{item.lot_number ?? '—'}</td>
                   </tr>
                 ))}
