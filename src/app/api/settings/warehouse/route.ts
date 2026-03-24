@@ -28,8 +28,7 @@ export async function PUT(req: NextRequest) {
 
   const { data, error } = await supabase
     .from('company_settings')
-    .upsert({
-      id: 1,
+    .update({
       warehouse_name,
       address_line1,
       address_line2,
@@ -41,6 +40,7 @@ export async function PUT(req: NextRequest) {
       email,
       updated_at: new Date().toISOString(),
     })
+    .eq('id', 1)
     .select()
     .single()
 
