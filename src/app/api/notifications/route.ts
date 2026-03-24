@@ -94,16 +94,15 @@ export async function POST(req: NextRequest) {
       const orderNumber = order.order_number
 
       const replyTo = staffEmails[0] ?? undefined
-      const referenceType: string | undefined = order.reference_type ?? undefined
-      const referenceNumber: string | undefined = order.reference_number ?? undefined
 
       // ── Build shared OrderDetails object ──────────────────────────────────
       const orderDetails: OrderDetails = {
+        customerName,
         consigneeName,
         deliveryAddress,
         warehouseAddress,
-        referenceType,
-        referenceNumber,
+        referenceType: order.reference_type ?? undefined,
+        referenceNumber: order.reference_number ?? undefined,
         shipByDate: order.ship_by_date ?? undefined,
         palletCount: order.pallet_count ?? undefined,
         palletWeightKg: order.pallet_weight_kg ?? undefined,
@@ -134,7 +133,7 @@ export async function POST(req: NextRequest) {
       if (type === 'outbound_submitted') {
         staffEmails.forEach(e => sends.push(sendOutboundSubmitted(e, orderNumber, customerName, orderDetails)))
         customerEmails.forEach(e => sends.push(sendOutboundSubmitted(e, orderNumber, undefined, orderDetails)))
-        if (consigneeEmail) sends.push(sendConsigneeOrderConfirmation(consigneeEmail, orderNumber, consigneeName, orderDetails, trackUrl, referenceType, referenceNumber, replyTo))
+        if (consigneeEmail) sends.push(sendConsigneeOrderConfirmation(consigneeEmail, orderNumber, consigneeName, orderDetails, trackUrl, replyTo))
       }
       if (type === 'outbound_picked') {
         staffEmails.forEach(e => sends.push(sendOutboundPicked(e, orderNumber, customerName, orderDetails)))

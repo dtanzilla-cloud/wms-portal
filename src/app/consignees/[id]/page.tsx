@@ -2,6 +2,7 @@ import { createClient } from '@/lib/supabase/server'
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import { ArrowLeft, Building2, MapPin, Phone, Mail, ArrowUpCircle, Pencil } from 'lucide-react'
+import InviteButton from '@/components/consignees/InviteButton'
 
 export default async function ConsigneeDetailPage({ params }: { params: { id: string } }) {
   const supabase = await createClient()
@@ -11,7 +12,7 @@ export default async function ConsigneeDetailPage({ params }: { params: { id: st
 
   const { data: consignee } = await supabase
     .from('consignees')
-    .select('*, consignee_addresses(*), customers(name)')
+    .select('*, consignee_addresses(*), customers(name), invite_sent_at, invite_accepted_at')
     .eq('id', params.id)
     .single()
 
@@ -46,6 +47,12 @@ export default async function ConsigneeDetailPage({ params }: { params: { id: st
             </div>
           </div>
           <div className="flex items-center gap-2">
+            <InviteButton
+              consigneeId={params.id}
+              contactEmail={consignee.contact_email ?? null}
+              inviteSentAt={consignee.invite_sent_at ?? null}
+              inviteAcceptedAt={consignee.invite_accepted_at ?? null}
+            />
             <Link href={`/consignees/${params.id}/edit`} className="btn-secondary flex items-center gap-2 text-sm">
               <Pencil size={13} /> Edit
             </Link>

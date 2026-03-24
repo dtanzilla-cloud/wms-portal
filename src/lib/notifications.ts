@@ -17,9 +17,10 @@ const FROM = getFrom()
 // ── Shared order details interface ───────────────────────────────────────────
 
 export interface OrderDetails {
+  customerName?: string      // warehouse customer (e.g. "Adeline Chemicals")
   consigneeName?: string
   deliveryAddress?: string   // formatted string, used in consignee + staff emails
-  warehouseAddress?: string  // shown only in consignee emails
+  warehouseAddress?: string  // shown in all emails
   referenceType?: string
   referenceNumber?: string
   shipByDate?: string
@@ -324,18 +325,19 @@ export async function sendConsigneeOrderConfirmation(
   consigneeName: string,
   details: OrderDetails,
   trackUrl: string,
-  referenceType?: string,
-  referenceNumber?: string,
   replyTo?: string,
 ) {
-  const refPart = referenceType && referenceNumber ? ` ${referenceType} ${referenceNumber}` : ''
-  const subject = `Outbound order ${consigneeName}${refPart}`
-
-  const merged: OrderDetails = { ...details, consigneeName, referenceType, referenceNumber }
+  // Subject: Outbound order {Customer} {Consignee} {RefType} {RefNumber}
+  const subjectParts = ['Outbound order']
+  if (details.customerName) subjectParts.push(details.customerName)
+  if (consigneeName)        subjectParts.push(consigneeName)
+  if (details.referenceType)   subjectParts.push(details.referenceType)
+  if (details.referenceNumber) subjectParts.push(details.referenceNumber)
+  const subject = subjectParts.join(' ')
 
   const body = `
     ${p(`An outbound order <strong>${orderNumber}</strong> has been placed for delivery to <strong>${consigneeName}</strong>.`)}
-    ${buildOrderDetailsHtml(merged, true)}
+    ${buildOrderDetailsHtml(details)}
   `
 
   await resend.emails.send({

@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
+import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { ArrowDownCircle, ArrowUpCircle, Package, Clock } from 'lucide-react'
 
@@ -8,6 +9,9 @@ export default async function DashboardPage() {
 
   const { data: profile } = await supabase
     .from('profiles').select('*, customers(*)').eq('id', user!.id).single()
+
+  // Consignee users go to their own portal
+  if (profile?.role === 'consignee') redirect('/consignee')
 
   const isStaff = profile?.role === 'warehouse_staff' || profile?.role === 'admin'
   const customerId = profile?.customer_id
