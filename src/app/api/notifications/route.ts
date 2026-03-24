@@ -90,12 +90,17 @@ export async function POST(req: NextRequest) {
       const fallbackStaff = process.env.STAFF_NOTIFICATION_EMAIL || process.env.NEXT_PUBLIC_STAFF_EMAIL
       const staffEmails = adminEmails.length > 0 ? adminEmails : fallbackStaff ? [fallbackStaff] : []
 
-      // Customer emails
+      // Customer emails — prefer portal accounts linked to this customer;
+      // fall back to the customer's billing_email if no profiles are linked yet.
       const { data: customerProfiles } = await supabase
         .from('profiles')
         .select('email')
         .eq('customer_id', order.customer_id)
-      const customerEmails = (customerProfiles ?? []).map((p: any) => p.email).filter(Boolean)
+      const billingEmail: string | undefined = (order.customers as any)?.billing_email ?? undefined
+      const profileEmails = (customerProfiles ?? []).map((p: any) => p.email).filter(Boolean)
+      const customerEmails: string[] = profileEmails.length > 0
+        ? profileEmails
+        : billingEmail ? [billingEmail] : []
       const customerName = order.customers?.name ?? ''
       const orderNumber = order.order_number
 

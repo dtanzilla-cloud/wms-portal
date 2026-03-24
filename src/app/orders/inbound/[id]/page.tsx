@@ -1,7 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
-import { ArrowLeft, ArrowDownCircle, Package, Truck, FileText, CheckCircle } from 'lucide-react'
+import { ArrowLeft, ArrowDownCircle, Package, Truck, FileText, CheckCircle, Pencil } from 'lucide-react'
 import OrderStatusActions from '@/components/orders/OrderStatusActions'
 import DocumentUpload from '@/components/documents/DocumentUpload'
 import OrderPhotos from '@/components/orders/OrderPhotos'
@@ -44,10 +44,18 @@ export default async function InboundOrderDetailPage({ params }: { params: { id:
             </div>
             {isStaff && <p className="text-sm text-gray-500 ml-9">{order.customers?.name}</p>}
           </div>
-          {isStaff && <OrderStatusActions order={order} type="inbound" />}
-          {!isStaff && ['draft', 'submitted'].includes(order.status) && (
-            <CancelOrderButton orderId={order.id} />
-          )}
+          <div className="flex items-center gap-2">
+            {['draft', 'submitted', 'pending'].includes(order.status) && (
+              <Link href={`/orders/inbound/${order.id}/edit`}
+                className="btn-secondary flex items-center gap-1.5 text-sm">
+                <Pencil size={14} /> Edit
+              </Link>
+            )}
+            {isStaff && <OrderStatusActions order={order} type="inbound" />}
+            {!isStaff && ['draft', 'submitted'].includes(order.status) && (
+              <CancelOrderButton orderId={order.id} />
+            )}
+          </div>
         </div>
       </div>
 
