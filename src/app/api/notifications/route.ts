@@ -37,12 +37,27 @@ export async function POST(req: NextRequest) {
       // Warehouse address for consignee emails
       const { data: warehouseSettings } = await supabase
         .from('company_settings')
-        .select('warehouse_name, address_line1, address_line2, city, state, postal_code, country')
+        .select('warehouse_name, address_line1, address_line2, city, state, postal_code, country, phone, email')
         .eq('id', 1)
         .single()
       const warehouseAddress = warehouseSettings
         ? [warehouseSettings.warehouse_name, warehouseSettings.address_line1, warehouseSettings.address_line2, warehouseSettings.city, warehouseSettings.state, warehouseSettings.postal_code].filter(Boolean).join(', ')
         : ''
+
+      // Fetch order documents to include in consignee email
+      const { data: orderDocuments } = await supabase
+        .from('documents')
+        .select('filename, storage_path')
+        .eq('order_id', order_id)
+        .neq('document_type', 'consignee_attachment')
+
+      const documents: { filename: string; url?: string }[] = []
+      for (const doc of orderDocuments ?? []) {
+        const { data: signed } = await supabase.storage
+          .from('documents')
+          .createSignedUrl(doc.storage_path, 60 * 60 * 24 * 7)
+        documents.push({ filename: doc.filename, url: signed?.signedUrl })
+      }
 
       // Consignee
       const trackUrl = `${process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000'}/track/${order.order_number}`
@@ -109,7 +124,7 @@ export async function POST(req: NextRequest) {
       if (type === 'outbound_submitted') {
         staffEmails.forEach(e => sends.push(sendOutboundSubmitted(e, orderNumber, customerName)))
         customerEmails.forEach(e => sends.push(sendOutboundSubmitted(e, orderNumber)))
-        if (consigneeEmail) sends.push(sendConsigneeOrderConfirmation(consigneeEmail, orderNumber, consigneeName, orderItems, deliveryAddress, warehouseAddress, trackUrl, referenceType, referenceNumber, replyTo))
+        if (consigneeEmail) sends.push(sendConsigneeOrderConfirmation(consigneeEmail, orderNumber, consigneeName, orderItems, deliveryAddress, warehouseAddress, trackUrl, referenceType, referenceNumber, replyTo, order.ship_by_date ?? undefined, order.pallet_count ?? undefined, order.pallet_weight_kg ?? undefined, order.pallet_dimensions ?? undefined, documents))
       }
 
       if (type === 'outbound_picked') {

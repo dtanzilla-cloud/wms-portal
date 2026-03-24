@@ -229,38 +229,91 @@ export async function sendConsigneeOrderConfirmation(
   referenceType?: string,
   referenceNumber?: string,
   replyTo?: string,
+  shipByDate?: string,
+  palletCount?: number | null,
+  palletWeightKg?: number | null,
+  palletDimensions?: string | null,
+  documents?: { filename: string; url?: string }[],
 ) {
   const rows = items.map(i =>
     `<tr>
-      <td style="padding:6px 8px;border-bottom:1px solid #f1f5f9">${i.sku_code}</td>
-      <td style="padding:6px 8px;border-bottom:1px solid #f1f5f9">${i.description}</td>
-      <td style="padding:6px 8px;border-bottom:1px solid #f1f5f9">${i.quantity} ${i.unit}</td>
+      <td style="padding:8px 10px;border-bottom:1px solid #f1f5f9;font-family:monospace;font-size:12px;color:#c2410c">${i.sku_code}</td>
+      <td style="padding:8px 10px;border-bottom:1px solid #f1f5f9;color:#374151">${i.description}</td>
+      <td style="padding:8px 10px;border-bottom:1px solid #f1f5f9;text-align:right;color:#1e293b;font-weight:600">${i.quantity}</td>
+      <td style="padding:8px 10px;border-bottom:1px solid #f1f5f9;text-align:right;color:#64748b">${i.unit}</td>
     </tr>`
   ).join('')
 
   const refPart = referenceType && referenceNumber ? ` ${referenceType} ${referenceNumber}` : ''
   const subject = `Outbound order ${consigneeName}${refPart}`
 
+  // Two-column address grid
+  const addrBlock = (label: string, lines: string) =>
+    `<div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:6px;padding:12px 14px">
+      <p style="margin:0 0 6px;font-size:10px;text-transform:uppercase;letter-spacing:0.06em;color:#64748b;font-weight:600">${label}</p>
+      <p style="margin:0;font-size:13px;color:#1e293b;line-height:1.6">${lines}</p>
+    </div>`
+
+  const deliveryLines = deliveryAddress.replace(/,\s*/g, '<br>')
+  const warehouseLines = warehouseAddress.replace(/,\s*/g, '<br>')
+
+  // Order details rows
+  const detailRows: string[] = []
+  if (referenceType && referenceNumber) detailRows.push(`<tr><td style="padding:5px 0;color:#64748b;font-size:13px;width:140px">${referenceType}</td><td style="padding:5px 0;font-size:13px;font-weight:600;color:#1e293b;font-family:monospace">${referenceNumber}</td></tr>`)
+  if (shipByDate) detailRows.push(`<tr><td style="padding:5px 0;color:#64748b;font-size:13px">Ship by</td><td style="padding:5px 0;font-size:13px;font-weight:600;color:#1e293b">${new Date(shipByDate).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}</td></tr>`)
+  if (palletCount) detailRows.push(`<tr><td style="padding:5px 0;color:#64748b;font-size:13px">Pallets</td><td style="padding:5px 0;font-size:13px;font-weight:600;color:#1e293b">${palletCount}</td></tr>`)
+  if (palletWeightKg) detailRows.push(`<tr><td style="padding:5px 0;color:#64748b;font-size:13px">Pallet weight</td><td style="padding:5px 0;font-size:13px;font-weight:600;color:#1e293b">${palletWeightKg} kg</td></tr>`)
+  if (palletDimensions) detailRows.push(`<tr><td style="padding:5px 0;color:#64748b;font-size:13px">Dimensions</td><td style="padding:5px 0;font-size:13px;font-weight:600;color:#1e293b;font-family:monospace">${palletDimensions}</td></tr>`)
+
+  const documentsSection = documents && documents.length > 0
+    ? `<div style="margin-top:20px">
+        <p style="margin:0 0 8px;font-size:12px;text-transform:uppercase;letter-spacing:0.06em;color:#64748b;font-weight:600">Attachments</p>
+        <ul style="margin:0;padding:0;list-style:none">
+          ${documents.map(d =>
+            d.url
+              ? `<li style="padding:5px 0;border-bottom:1px solid #f1f5f9"><a href="${d.url}" style="color:#2563eb;font-size:13px;text-decoration:none">📎 ${d.filename}</a></li>`
+              : `<li style="padding:5px 0;border-bottom:1px solid #f1f5f9;font-size:13px;color:#374151">📎 ${d.filename}</li>`
+          ).join('')}
+        </ul>
+        <p style="margin:8px 0 0;font-size:12px;color:#94a3b8">View all documents on the tracking page.</p>
+      </div>`
+    : ''
+
+  const body = `
+    ${p(`An outbound order <strong>${orderNumber}</strong> has been placed for delivery to <strong>${consigneeName}</strong>.`)}
+
+    ${(deliveryAddress || warehouseAddress) ? `
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:16px 0">
+      ${deliveryAddress ? addrBlock('Ship to', deliveryLines) : ''}
+      ${warehouseAddress ? addrBlock('Shipping from', warehouseLines) : ''}
+    </div>` : ''}
+
+    ${detailRows.length ? `
+    <table style="width:100%;border-collapse:collapse;margin:16px 0">
+      ${detailRows.join('')}
+    </table>` : ''}
+
+    <p style="margin:16px 0 6px;font-size:12px;text-transform:uppercase;letter-spacing:0.06em;color:#64748b;font-weight:600">Items</p>
+    <table style="width:100%;border-collapse:collapse;font-size:13px">
+      <thead>
+        <tr style="background:#f1f5f9">
+          <th style="text-align:left;padding:8px 10px;font-size:11px;color:#64748b;font-weight:600">SKU</th>
+          <th style="text-align:left;padding:8px 10px;font-size:11px;color:#64748b;font-weight:600">Description</th>
+          <th style="text-align:right;padding:8px 10px;font-size:11px;color:#64748b;font-weight:600">Qty</th>
+          <th style="text-align:right;padding:8px 10px;font-size:11px;color:#64748b;font-weight:600">Unit</th>
+        </tr>
+      </thead>
+      <tbody>${rows}</tbody>
+    </table>
+
+    ${documentsSection}
+  `
+
   await resend.emails.send({
     from: FROM, to,
     ...(replyTo ? { reply_to: replyTo } : {}),
     subject,
-    html: consigneeLayout('Incoming shipment confirmation',
-      `${p(`An outbound order <strong>${orderNumber}</strong> has been placed for delivery to <strong>${consigneeName}</strong>.`)}
-      <table style="width:100%;border-collapse:collapse;font-size:13px;margin:16px 0">
-        <thead>
-          <tr style="background:#f1f5f9">
-            <th style="text-align:left;padding:8px">SKU</th>
-            <th style="text-align:left;padding:8px">Description</th>
-            <th style="text-align:left;padding:8px">Qty</th>
-          </tr>
-        </thead>
-        <tbody>${rows}</tbody>
-      </table>
-      ${deliveryAddress ? p(`Deliver to: <strong>${deliveryAddress}</strong>`) : ''}
-      ${warehouseAddress ? p(`Shipping from: ${warehouseAddress}`) : ''}`,
-      trackUrl,
-    )
+    html: consigneeLayout(`Incoming shipment — ${orderNumber}`, body, trackUrl),
   })
 }
 
