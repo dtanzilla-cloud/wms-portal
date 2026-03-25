@@ -39,6 +39,24 @@ export default function DocumentUpload({ orderId, documents: initialDocs }: Prop
   const [docType, setDocType] = useState('other')
   const [error, setError] = useState('')
   const [downloading, setDownloading] = useState<string | null>(null)
+  const [deleting, setDeleting] = useState<string | null>(null)
+
+  async function handleDelete(doc: Document) {
+    if (!confirm(`Delete "${doc.filename}"? This cannot be undone.`)) return
+    setDeleting(doc.id)
+    setError('')
+    try {
+      const res = await fetch(`/api/documents/delete?id=${doc.id}`, { method: 'DELETE' })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error)
+      setDocs(prev => prev.filter(d => d.id !== doc.id))
+      router.refresh()
+    } catch (e: any) {
+      setError(e.message)
+    } finally {
+      setDeleting(null)
+    }
+  }
 
   async function handleUpload(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
@@ -126,16 +144,28 @@ export default function DocumentUpload({ orderId, documents: initialDocs }: Prop
                   </p>
                 </div>
               </div>
-              <button
-                onClick={() => handleDownload(doc)}
-                disabled={downloading === doc.id}
-                className="ml-3 text-gray-400 hover:text-blue-600 transition-colors shrink-0"
-                title="Download"
-              >
-                {downloading === doc.id
-                  ? <Loader2 size={14} className="animate-spin" />
-                  : <Download size={14} />}
-              </button>
+              <div className="ml-3 flex items-center gap-1 shrink-0">
+                <button
+                  onClick={() => handleDownload(doc)}
+                  disabled={downloading === doc.id || deleting === doc.id}
+                  className="text-gray-400 hover:text-blue-600 transition-colors p-1"
+                  title="Download"
+                >
+                  {downloading === doc.id
+                    ? <Loader2 size={14} className="animate-spin" />
+                    : <Download size={14} />}
+                </button>
+                <button
+                  onClick={() => handleDelete(doc)}
+                  disabled={deleting === doc.id || downloading === doc.id}
+                  className="text-gray-400 hover:text-red-500 transition-colors p-1"
+                  title="Delete"
+                >
+                  {deleting === doc.id
+                    ? <Loader2 size={14} className="animate-spin" />
+                    : <X size={14} />}
+                </button>
+              </div>
             </div>
           ))}
         </div>
