@@ -2,12 +2,14 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
+import { createClient } from '@/lib/supabase/client'
 
 export default function SignupPage() {
   const router = useRouter()
   const [form, setForm] = useState({ company: '', full_name: '', email: '', password: '' })
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
+  const [status, setStatus] = useState('')
 
   function set(field: string) {
     return (e: React.ChangeEvent<HTMLInputElement>) => setForm(f => ({ ...f, [field]: e.target.value }))
@@ -17,14 +19,42 @@ export default function SignupPage() {
     e.preventDefault()
     setLoading(true)
     setError('')
+    setStatus('Creating your account…')
+
+    // Step 1 — create user + customer record on the server
     const res = await fetch('/api/auth/signup', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(form),
     })
     const data = await res.json()
-    if (!res.ok) { setError(data.error || 'Signup failed'); setLoading(false) }
-    else router.push('/dashboard')
+    if (!res.ok) {
+      setError(data.error || 'Signup failed')
+      setLoading(false)
+      setStatus('')
+      return
+    }
+
+    // Step 2 — sign in client-side so the browser session cookie is properly set.
+    // The admin client used in the API route cannot write browser cookies.
+    // createClient() is called here (not at module level) to avoid a build-time
+    // crash when Next.js prerenders the page without env vars present.
+    setStatus('Signing you in…')
+    const supabase = createClient()
+    const { error: signInErr } = await supabase.auth.signInWithPassword({
+      email: form.email,
+      password: form.password,
+    })
+    if (signInErr) {
+      // Account exists — just couldn't auto-sign in; send to login page
+      setError('Account created — please sign in.')
+      setLoading(false)
+      setStatus('')
+      router.push('/auth/login')
+      return
+    }
+
+    router.push('/dashboard')
   }
 
   return (
@@ -62,14 +92,13 @@ export default function SignupPage() {
             </div>
             {error && <p className="text-sm text-red-600 bg-red-50 px-3 py-2 rounded">{error}</p>}
             <button type="submit" disabled={loading} className="btn-primary w-full">
-              {loading ? 'Creating account...' : 'Start free trial'}
+              {loading ? (status || 'Please wait…') : 'Start free trial'}
             </button>
-            <p className="text-xs text-gray-400 text-center">
-              No credit card required. 14 days free.
-            </p>
+            <p className="text-xs text-gray-400 text-center">No credit card required. 14 days free.</p>
           </form>
           <div className="mt-4 text-center text-xs text-gray-500">
-            Already have an account? <Link href="/auth/login" className="text-blue-600 hover:underline">Sign in</Link>
+            Already have an account?{' '}
+            <Link href="/auth/login" className="text-blue-600 hover:underline">Sign in</Link>
           </div>
         </div>
       </div>

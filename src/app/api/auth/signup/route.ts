@@ -31,13 +31,10 @@ export async function POST(req: NextRequest) {
       id: userId, customer_id: customer.id, role: 'customer', full_name, email,
     })
 
-    // Sign in the new user
-    const { error: signInError } = await supabase.auth.signInWithPassword({ email, password })
-    if (signInError) return NextResponse.json({ error: 'Account created, please sign in' }, { status: 200 })
-
-    // TODO: send welcome email via Resend
-
-    return NextResponse.json({ success: true })
+    // NOTE: sign-in MUST happen client-side so the browser session cookie is
+    // written correctly. Return credentials so the page can call
+    // supabase.auth.signInWithPassword() itself after this response.
+    return NextResponse.json({ success: true, email, password })
   } catch (e: any) {
     return NextResponse.json({ error: e.message }, { status: 500 })
   }
