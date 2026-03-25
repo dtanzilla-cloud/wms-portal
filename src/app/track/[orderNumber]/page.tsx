@@ -131,7 +131,7 @@ export default async function TrackingPage({ params }: { params: { orderNumber: 
               {order.pallet_weight_kg && (
                 <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                   <dt style={{ color: '#64748b' }}>Weight</dt>
-                  <dd style={{ color: '#1e293b', fontWeight: 500, margin: 0 }}>{order.pallet_weight_kg} kg</dd>
+                  <dd style={{ color: '#1e293b', fontWeight: 500, margin: 0 }}>{order.pallet_weight_kg} lb</dd>
                 </div>
               )}
               {order.pallet_dimensions && (

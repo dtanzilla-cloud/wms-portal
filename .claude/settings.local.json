@@ -7,7 +7,9 @@
       "Bash(npx supabase:*)",
       "Bash(powershell -Command \"Get-ChildItem -Path src -Recurse -Include *.tsx,*.ts | ForEach-Object { \\(Get-Content $_FullName -Raw\\) -replace ''WMS Portal'', ''CTS Portal'' | Set-Content $_FullName -NoNewline }\")",
       "Bash(powershell -Command \"Get-ChildItem -Path ''C:\\\\Users\\\\dt\\\\Downloads\\\\fileswms\\\\wms-clean\\\\src'' -Recurse -Include ''*.tsx'',''*.ts'' | ForEach-Object { $content = Get-Content -Path $_FullName -Raw; $updated = $content -replace ''WMS Portal'', ''CTS Portal''; if \\($content -ne $updated\\) { Set-Content -Path $_FullName -Value $updated -NoNewline; Write-Host $_FullName } }\")",
-      "Bash(powershell -Command \"& { $files = Get-ChildItem -Path ''C:\\\\Users\\\\dt\\\\Downloads\\\\fileswms\\\\wms-clean\\\\src'' -Recurse -Include ''*.tsx'',''*.ts''; foreach \\($file in $files\\) { $content = Get-Content -Path $file.FullName -Raw; if \\($null -ne $content -and $content.Contains\\(''WMS Portal''\\)\\) { $updated = $content.Replace\\(''WMS Portal'', ''CTS Portal''\\); [System.IO.File]::WriteAllText\\($file.FullName, $updated\\); Write-Host \\(''Updated: '' + $file.FullName\\) } } }\")"
+      "Bash(powershell -Command \"& { $files = Get-ChildItem -Path ''C:\\\\Users\\\\dt\\\\Downloads\\\\fileswms\\\\wms-clean\\\\src'' -Recurse -Include ''*.tsx'',''*.ts''; foreach \\($file in $files\\) { $content = Get-Content -Path $file.FullName -Raw; if \\($null -ne $content -and $content.Contains\\(''WMS Portal''\\)\\) { $updated = $content.Replace\\(''WMS Portal'', ''CTS Portal''\\); [System.IO.File]::WriteAllText\\($file.FullName, $updated\\); Write-Host \\(''Updated: '' + $file.FullName\\) } } }\")",
+      "Bash(npm run:*)",
+      "Bash(grep -n \"Pallet weight\\\\|pallet_weight\\\\|carrier\\\\|Carrier\" src/app/orders/outbound/new/page.tsx src/app/orders/outbound/[id]/edit/page.tsx src/app/orders/inbound/new/page.tsx src/app/orders/inbound/[id]/edit/page.tsx)"
     ]
   }
 }

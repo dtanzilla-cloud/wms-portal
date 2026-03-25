@@ -81,7 +81,7 @@ function generatePackingListHTML(order: any): string {
       <th style="text-align:right">Qty</th>
       <th style="text-align:right">Cartons</th>
       <th style="text-align:right">Units/Ctn</th>
-      <th style="text-align:right">Weight (kg)</th>
+      <th style="text-align:right">Weight (lb)</th>
     </tr>
   </thead>
   <tbody>${itemRows}</tbody>
@@ -185,7 +185,7 @@ function generateBOLHTML(order: any): string {
       <th>Description</th>
       <th>Qty</th>
       <th>Cartons</th>
-      <th>Weight (kg)</th>
+      <th>Weight (lb)</th>
     </tr>
   </thead>
   <tbody>

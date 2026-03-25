@@ -1,7 +1,9 @@
 'use client'
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { ChevronUp, ChevronDown, ChevronsUpDown } from 'lucide-react'
+import { createClient } from '@/lib/supabase/client'
 
 interface InventoryRow {
   sku_id: string
@@ -31,8 +33,24 @@ function SortIcon({ col, sortKey, sortDir }: { col: SortKey; sortKey: SortKey; s
 }
 
 export default function InventoryTable({ rows }: { rows: InventoryRow[] }) {
+  const router = useRouter()
   const [sortKey, setSortKey] = useState<SortKey>('sku_code')
   const [sortDir, setSortDir] = useState<SortDir>('asc')
+
+  // Automatically refresh when inventory_levels or skus change in Supabase
+  useEffect(() => {
+    const supabase = createClient()
+    const channel = supabase
+      .channel('inventory-realtime')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'inventory_levels' }, () => {
+        router.refresh()
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'skus' }, () => {
+        router.refresh()
+      })
+      .subscribe()
+    return () => { supabase.removeChannel(channel) }
+  }, [router])
 
   function handleSort(key: SortKey) {
     if (sortKey === key) {

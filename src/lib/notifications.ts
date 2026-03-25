@@ -168,7 +168,7 @@ function buildOrderDetailsHtml(d: OrderDetails, includeWarehouse = true): string
   if (d.palletCount)
     detailRows.push(detailRow('Pallets', String(d.palletCount)))
   if (d.palletWeightKg)
-    detailRows.push(detailRow('Pallet weight', `${d.palletWeightKg} kg`))
+    detailRows.push(detailRow('Pallet weight', `${d.palletWeightKg} lb`))
   if (d.palletDimensions)
     detailRows.push(detailRow('Dimensions', `<span style="font-family:monospace">${d.palletDimensions}</span>`))
   if (d.carrier)

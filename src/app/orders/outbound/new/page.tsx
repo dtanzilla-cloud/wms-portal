@@ -32,6 +32,7 @@ export default function NewOutboundOrderPage() {
   const [shipByDate, setShipByDate] = useState('')
   const [palletCount, setPalletCount] = useState('1')
   const [palletWeightKg, setPalletWeightKg] = useState('')
+  const [carrier, setCarrier] = useState('')
   const [palletDimensions, setPalletDimensions] = useState('')
   const [notes, setNotes] = useState('')
   const [deliveryInstructions, setDeliveryInstructions] = useState('')
@@ -110,6 +111,7 @@ export default function NewOutboundOrderPage() {
         consignee_id: consigneeId, consignee_address_id: consigneeAddressId || null,
         ship_by_date: shipByDate || null, pallet_count: parseInt(palletCount) || 1,
         pallet_weight_kg: palletWeightKg ? parseFloat(palletWeightKg) : null,
+        carrier: carrier || null,
         pallet_dimensions: palletDimensions || null,
         notes: notes || null, delivery_instructions: deliveryInstructions || null,
         reference_type: referenceType || null, reference_number: referenceNumber || null,
@@ -200,9 +202,15 @@ export default function NewOutboundOrderPage() {
                 className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
             </div>
             <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1">Pallet weight (kg)</label>
+              <label className="block text-xs font-medium text-gray-600 mb-1">Pallet weight (lb)</label>
               <input type="number" min="0" step="0.01" value={palletWeightKg} onChange={e => setPalletWeightKg(e.target.value)}
                 placeholder="e.g. 500.00"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-gray-600 mb-1">Carrier</label>
+              <input type="text" value={carrier} onChange={e => setCarrier(e.target.value)}
+                placeholder="e.g. FedEx, DHL"
                 className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
             </div>
             <div className="col-span-2">
