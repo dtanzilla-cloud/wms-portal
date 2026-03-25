@@ -216,6 +216,63 @@ ${order.delivery_instructions ? `<div class="box" style="margin-top:16px"><h3>Sp
 </html>`
 }
 
+// ── Shared fetch helper ───────────────────────────────────────────────────────
+
+async function fetchOrder(supabase: any, order_id: string) {
+  const { data } = await supabase
+    .from('orders')
+    .select('*, customers(name, billing_email), consignees(company_name, contact_name, contact_phone), consignee_addresses:consignee_address_id(*), order_items(*, skus(sku_code, description, unit))')
+    .eq('id', order_id)
+    .single()
+  return data
+}
+
+// ── GET — serve HTML directly (no popup-blocker issues, no signed-URL expiry)
+// Usage: /api/pdf?order_id=xxx&type=packing_list|bill_of_lading
+export async function GET(req: NextRequest) {
+  try {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return new Response('Unauthorized', { status: 401 })
+
+    const { searchParams } = new URL(req.url)
+    const order_id = searchParams.get('order_id') ?? ''
+    const type = searchParams.get('type') ?? ''
+    if (!order_id || !['packing_list', 'bill_of_lading'].includes(type)) {
+      return new Response('Invalid request', { status: 400 })
+    }
+
+    const order = await fetchOrder(supabase, order_id)
+    if (!order) return new Response('Order not found', { status: 404 })
+
+    const html = type === 'packing_list' ? generatePackingListHTML(order) : generateBOLHTML(order)
+
+    // Save to storage + documents table as a best-effort side-effect
+    const filename = `${type === 'packing_list' ? 'PackingList' : 'BOL'}-${order.order_number}.html`
+    const storagePath = `${order.customer_id}/${order_id}/${filename}`
+    const htmlBuf = Buffer.from(html)
+    ;(async () => {
+      const { error: uploadErr } = await supabase.storage
+        .from('documents')
+        .upload(storagePath, htmlBuf, { contentType: 'text/html', upsert: true })
+      if (!uploadErr) {
+        await supabase.from('documents').insert({
+          order_id, customer_id: order.customer_id, document_type: type,
+          filename, storage_path: storagePath,
+          file_size_bytes: htmlBuf.length,
+          uploaded_by: user.id, is_generated: true,
+        }).then(() => {}) // best-effort, ignore duplicate errors
+      }
+    })()
+
+    return new Response(html, {
+      headers: { 'Content-Type': 'text/html; charset=utf-8' },
+    })
+  } catch (e: any) {
+    return new Response(e.message, { status: 500 })
+  }
+}
+
 export async function POST(req: NextRequest) {
   try {
     const supabase = await createClient()
@@ -227,12 +284,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Invalid request' }, { status: 400 })
     }
 
-    const { data: order } = await supabase
-      .from('orders')
-      .select('*, customers(name, billing_email), consignees(company_name, contact_name, contact_phone), consignee_addresses:consignee_address_id(*), order_items(*, skus(sku_code, description, unit))')
-      .eq('id', order_id)
-      .single()
-
+    const order = await fetchOrder(supabase, order_id)
     if (!order) return NextResponse.json({ error: 'Order not found' }, { status: 404 })
 
     const html = type === 'packing_list' ? generatePackingListHTML(order) : generateBOLHTML(order)

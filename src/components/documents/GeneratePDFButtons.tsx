@@ -13,30 +13,32 @@ export default function GeneratePDFButtons({ orderId, onGenerated }: Props) {
   const [loading, setLoading] = useState<string | null>(null)
   const [error, setError] = useState('')
 
-  async function generate(type: 'packing_list' | 'bill_of_lading') {
-    setLoading(type)
+  function generate(type: 'packing_list' | 'bill_of_lading') {
     setError('')
-    try {
-      const res = await fetch('/api/pdf', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ order_id: orderId, type }),
-      })
-      const data = await res.json()
-      if (!res.ok) throw new Error(data.error)
-      if (data.url) window.open(data.url, '_blank')
+    setLoading(type)
+
+    // Open the GET endpoint directly and synchronously (inside the click handler,
+    // before any async work) so the browser does NOT treat it as a popup.
+    // The GET handler streams HTML immediately — no signed-URL expiry, no forced download.
+    const url = `/api/pdf?order_id=${encodeURIComponent(orderId)}&type=${type}`
+    const win = window.open(url, '_blank')
+    if (!win) {
+      setError('Popup blocked — please allow popups for this site and try again.')
+    }
+
+    // Short delay then refresh so the documents list picks up the new record
+    setTimeout(() => {
       onGenerated?.()
       router.refresh()
-    } catch (e: any) {
-      setError(e.message)
-    } finally {
       setLoading(null)
-    }
+    }, 1500)
   }
 
   return (
-    <div className="flex items-center gap-2">
-      {error && <span className="text-xs text-red-600">{error}</span>}
+    <div className="flex items-center gap-2 flex-wrap">
+      {error && (
+        <span className="text-xs text-red-600 bg-red-50 px-2 py-1 rounded w-full">{error}</span>
+      )}
       <button
         onClick={() => generate('packing_list')}
         disabled={!!loading}
