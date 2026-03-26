@@ -17,8 +17,8 @@ const nextStatusInbound: Record<string, string> = {
 
 const nextStatusOutbound: Record<string, string> = {
   draft: 'submitted',
-  submitted: 'picked',
-  picked: 'packed',
+  submitted: 'packed',
+  picked: 'packed',   // backward-compat: existing orders already at 'picked'
   packed: 'shipped',
 }
 
@@ -31,8 +31,8 @@ const nextLabelInbound: Record<string, string> = {
 
 const nextLabelOutbound: Record<string, string> = {
   draft: 'Mark submitted',
-  submitted: 'Mark picked',
-  picked: 'Mark packed',
+  submitted: 'Mark picked & packed',
+  picked: 'Mark packed',   // backward-compat
   packed: 'Mark shipped',
   shipped: '',
 }
@@ -108,7 +108,6 @@ export default function OrderStatusActions({ order, type }: Props) {
       submitted: `${type}_submitted`,
       received: 'inbound_received',
       put_away: 'inbound_put_away',
-      picked: 'outbound_picked',
       packed: 'outbound_packed',
       shipped: 'outbound_shipped',
     }

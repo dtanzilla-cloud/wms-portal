@@ -7,7 +7,6 @@ import {
   sendInboundReceived,
   sendInboundPutAway,
   sendOutboundSubmitted,
-  sendOutboundPicked,
   sendOutboundPacked,
   sendOutboundShipped,
   sendOrderUpdated,
@@ -145,11 +144,6 @@ export async function POST(req: NextRequest) {
         staffEmails.forEach(e => sends.push(sendOutboundSubmitted(e, orderNumber, customerName, orderDetails)))
         customerEmails.forEach(e => sends.push(sendOutboundSubmitted(e, orderNumber, undefined, orderDetails)))
         if (consigneeEmail) sends.push(sendConsigneeOrderConfirmation(consigneeEmail, orderNumber, consigneeName, orderDetails, trackUrl, replyTo))
-      }
-      if (type === 'outbound_picked') {
-        staffEmails.forEach(e => sends.push(sendOutboundPicked(e, orderNumber, customerName, orderDetails)))
-        customerEmails.forEach(e => sends.push(sendOutboundPicked(e, orderNumber, undefined, orderDetails)))
-        if (consigneeEmail) sends.push(sendConsigneeOrderUpdated(consigneeEmail, orderNumber, consigneeName, 'picked', orderDetails, trackUrl, replyTo))
       }
       if (type === 'outbound_packed') {
         staffEmails.forEach(e => sends.push(sendOutboundPacked(e, orderNumber, customerName, orderDetails)))

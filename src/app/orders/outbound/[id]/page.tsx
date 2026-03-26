@@ -24,7 +24,7 @@ export default async function OutboundOrderDetailPage({ params }: { params: { id
   if (!order) notFound()
   if (!isStaff && order.customer_id !== profile?.customer_id) notFound()
 
-  const statusFlow = ['draft', 'submitted', 'picked', 'packed', 'shipped']
+  const statusFlow = ['draft', 'submitted', 'packed', 'shipped']
   const currentIdx = statusFlow.indexOf(order.status)
 
   return (
@@ -45,13 +45,13 @@ export default async function OutboundOrderDetailPage({ params }: { params: { id
             {isStaff && <p className="text-sm text-gray-500 ml-9">{order.customers?.name}</p>}
           </div>
           <div className="flex items-center gap-2">
-            {['draft', 'submitted', 'picked'].includes(order.status) && (
+            {['draft', 'submitted', 'picked', 'packed'].includes(order.status) && (
               <Link href={`/orders/outbound/${order.id}/edit`} className="btn-secondary text-sm flex items-center gap-1.5">
                 <Pencil size={13} /> Edit
               </Link>
             )}
             {isStaff && <OrderStatusActions order={order} type="outbound" />}
-            {!isStaff && ['draft', 'submitted'].includes(order.status) && (
+            {!isStaff && ['draft', 'submitted', 'packed'].includes(order.status) && (
               <CancelOrderButton orderId={order.id} />
             )}
           </div>

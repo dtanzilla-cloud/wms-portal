@@ -16,7 +16,7 @@ export default async function TrackingPage({ params }: { params: { orderNumber: 
 
   if (!order) notFound()
 
-  const statusFlow = ['submitted', 'picked', 'packed', 'shipped']
+  const statusFlow = ['submitted', 'packed', 'shipped']
   const currentIdx = statusFlow.indexOf(order.status)
   const isCancelled = order.status === 'cancelled'
 
