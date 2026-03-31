@@ -3,7 +3,6 @@ import { createClient } from '@/lib/supabase/server'
 import {
   OrderDetails,
   sendInboundSubmitted,
-  sendInboundSubmittedCustomer,
   sendInboundReceived,
   sendInboundPutAway,
   sendOutboundSubmitted,
@@ -124,45 +123,39 @@ export async function POST(req: NextRequest) {
       }
 
       const sends: Promise<any>[] = []
+      // All staff + customer recipients in one combined list
+      const allEmails = [...staffEmails, ...customerEmails]
 
       // ── Inbound ───────────────────────────────────────────────────────────
       if (type === 'inbound_submitted') {
-        if (staffEmails.length)    sends.push(sendInboundSubmitted(staffEmails, orderNumber, customerName, orderDetails))
-        if (customerEmails.length) sends.push(sendInboundSubmittedCustomer(customerEmails, orderNumber, customerName, orderDetails))
+        if (allEmails.length) sends.push(sendInboundSubmitted(allEmails, orderNumber, customerName, orderDetails))
       }
       if (type === 'inbound_received') {
-        if (staffEmails.length)    sends.push(sendInboundReceived(staffEmails, orderNumber, customerName, orderDetails))
-        if (customerEmails.length) sends.push(sendInboundReceived(customerEmails, orderNumber, '', orderDetails))
+        if (allEmails.length) sends.push(sendInboundReceived(allEmails, orderNumber, customerName, orderDetails))
       }
       if (type === 'inbound_put_away') {
-        if (staffEmails.length)    sends.push(sendInboundPutAway(staffEmails, orderNumber, customerName, orderDetails))
-        if (customerEmails.length) sends.push(sendInboundPutAway(customerEmails, orderNumber, '', orderDetails))
+        if (allEmails.length) sends.push(sendInboundPutAway(allEmails, orderNumber, customerName, orderDetails))
       }
 
       // ── Outbound ──────────────────────────────────────────────────────────
       if (type === 'outbound_submitted') {
-        if (staffEmails.length)    sends.push(sendOutboundSubmitted(staffEmails, orderNumber, customerName, orderDetails))
-        if (customerEmails.length) sends.push(sendOutboundSubmitted(customerEmails, orderNumber, undefined, orderDetails))
+        if (allEmails.length) sends.push(sendOutboundSubmitted(allEmails, orderNumber, customerName, orderDetails))
         if (consigneeEmail) sends.push(sendConsigneeOrderConfirmation(consigneeEmail, orderNumber, consigneeName, orderDetails, trackUrl, replyTo))
       }
       if (type === 'outbound_packed') {
-        if (staffEmails.length)    sends.push(sendOutboundPacked(staffEmails, orderNumber, customerName, orderDetails))
-        if (customerEmails.length) sends.push(sendOutboundPacked(customerEmails, orderNumber, undefined, orderDetails))
+        if (allEmails.length) sends.push(sendOutboundPacked(allEmails, orderNumber, customerName, orderDetails))
         if (consigneeEmail) sends.push(sendConsigneeOrderUpdated(consigneeEmail, orderNumber, consigneeName, 'packed', orderDetails, trackUrl, replyTo))
       }
       if (type === 'outbound_shipped') {
-        if (staffEmails.length)    sends.push(sendOutboundShipped(staffEmails, orderNumber, order.tracking_number ?? undefined, customerName, orderDetails))
-        if (customerEmails.length) sends.push(sendOutboundShipped(customerEmails, orderNumber, order.tracking_number ?? undefined, undefined, orderDetails))
+        if (allEmails.length) sends.push(sendOutboundShipped(allEmails, orderNumber, order.tracking_number ?? undefined, customerName, orderDetails))
         if (consigneeEmail) sends.push(sendConsigneeOrderShipped(consigneeEmail, orderNumber, consigneeName, orderDetails, trackUrl, replyTo))
       }
       if (type === 'order_updated') {
-        if (staffEmails.length)    sends.push(sendOrderUpdated(staffEmails, orderNumber, order.order_type, customerName, orderDetails))
-        if (customerEmails.length) sends.push(sendOrderUpdated(customerEmails, orderNumber, order.order_type, undefined, orderDetails))
+        if (allEmails.length) sends.push(sendOrderUpdated(allEmails, orderNumber, order.order_type, customerName, orderDetails))
         if (consigneeEmail && order.order_type === 'outbound') sends.push(sendConsigneeOrderUpdated(consigneeEmail, orderNumber, consigneeName, 'updated', orderDetails, trackUrl, replyTo))
       }
       if (type === 'order_cancelled') {
-        if (staffEmails.length)    sends.push(sendOrderCancelled(staffEmails, orderNumber, order.order_type, customerName))
-        if (customerEmails.length) sends.push(sendOrderCancelled(customerEmails, orderNumber, order.order_type))
+        if (allEmails.length) sends.push(sendOrderCancelled(allEmails, orderNumber, order.order_type, customerName))
         if (consigneeEmail && order.order_type === 'outbound') sends.push(sendConsigneeOrderUpdated(consigneeEmail, orderNumber, consigneeName, 'cancelled', orderDetails, trackUrl, replyTo))
       }
 

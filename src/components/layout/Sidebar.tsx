@@ -19,6 +19,7 @@ const customerNav = [
   { href: '/orders/inbound',      label: 'Inbound Orders',   icon: ArrowDownCircle },
   { href: '/orders/outbound',     label: 'Outbound Orders',  icon: ArrowUpCircle },
   { href: '/consignees',          label: 'Consignees',       icon: Building2 },
+  { href: '/carriers',            label: 'Carriers',         icon: Truck },
   { href: '/documents',           label: 'Documents',        icon: FileText },
   { href: '/settings',            label: 'Settings',         icon: Settings },
 ]
