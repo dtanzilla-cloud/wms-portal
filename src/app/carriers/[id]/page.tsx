@@ -1,14 +1,10 @@
 import { createClient } from '@/lib/supabase/server'
-import { notFound, redirect } from 'next/navigation'
+import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import { ArrowLeft, Truck, Phone, Mail, User, ArrowUpCircle, Pencil } from 'lucide-react'
 
 export default async function CarrierDetailPage({ params }: { params: { id: string } }) {
   const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  const { data: profile } = await supabase.from('profiles').select('role').eq('id', user!.id).single()
-  const isStaff = profile?.role === 'warehouse_staff' || profile?.role === 'admin'
-  if (!isStaff) redirect('/dashboard')
 
   const { data: carrier } = await supabase
     .from('carriers')
