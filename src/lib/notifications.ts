@@ -26,7 +26,11 @@ const FROM = getFrom()
 const APP_URL = getAppUrl()
 
 async function dispatchEmail(params: Parameters<ReturnType<typeof getResend>['emails']['send']>[0]) {
-  return getResend().emails.send(params)
+  const result = await getResend().emails.send(params)
+  if (result.error) {
+    throw new Error(`Resend error: ${result.error.name} — ${(result.error as any).message ?? JSON.stringify(result.error)}`)
+  }
+  return result
 }
 
 // ── Shared order details interface ───────────────────────────────────────────

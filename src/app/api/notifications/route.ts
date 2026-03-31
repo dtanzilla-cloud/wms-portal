@@ -159,7 +159,7 @@ export async function POST(req: NextRequest) {
         sendsQueued: sends.length,
         results: results.map((r, i) =>
           r.status === 'fulfilled'
-            ? { i, ok: !(r.value as any)?.error, resend: r.value }
+            ? { i, ok: true, resendId: (r.value as any)?.data?.id }
             : { i, ok: false, error: r.reason?.message ?? String(r.reason) }
         ),
       }
