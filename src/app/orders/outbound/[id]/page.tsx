@@ -6,7 +6,6 @@ import OrderStatusActions from '@/components/orders/OrderStatusActions'
 import DocumentUpload from '@/components/documents/DocumentUpload'
 import OrderPhotos from '@/components/orders/OrderPhotos'
 import CancelOrderButton from '@/components/orders/CancelOrderButton'
-import { revalidatePath } from 'next/cache'
 
 export default async function OutboundOrderDetailPage({ params }: { params: { id: string } }) {
   const supabase = await createClient()
