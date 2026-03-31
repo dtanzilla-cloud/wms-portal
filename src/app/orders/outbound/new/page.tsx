@@ -3,12 +3,20 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
-import { ArrowLeft, Plus, Trash2 } from 'lucide-react'
+import { ArrowLeft, Plus, Trash2, FileText, Upload } from 'lucide-react'
 
 interface SKUOption { id: string; sku_code: string; description: string; unit: string; quantity_available: number }
 interface ConsigneeOption { id: string; company_name: string; consignee_addresses: any[] }
 interface ItemRow { sku_id: string; quantity: number; lot_number: string }
 interface CarrierOption { id: string; name: string }
+interface PendingDoc { file: File; docType: string }
+
+const DOC_TYPES = [
+  { value: 'packing_list', label: 'Packing list' },
+  { value: 'bill_of_lading', label: 'Bill of lading' },
+  { value: 'commercial_invoice', label: 'Commercial invoice' },
+  { value: 'other', label: 'Other' },
+]
 
 const REF_TYPES = [
   { value: '', label: 'None' },
@@ -41,6 +49,8 @@ export default function NewOutboundOrderPage() {
   const [referenceType, setReferenceType] = useState('')
   const [referenceNumber, setReferenceNumber] = useState('')
   const [items, setItems] = useState<ItemRow[]>([{ sku_id: '', quantity: 1, lot_number: '' }])
+  const [pendingDocs, setPendingDocs] = useState<PendingDoc[]>([])
+  const [pendingDocType, setPendingDocType] = useState('other')
 
   const isStaff = profile?.role === 'warehouse_staff' || profile?.role === 'admin'
   const effectiveCustomerId = isStaff ? selectedCustomerId : profile?.customer_id
@@ -127,6 +137,15 @@ export default function NewOutboundOrderPage() {
         order_id: order.id, sku_id: it.sku_id, quantity: Number(it.quantity),
         lot_number: it.lot_number || null,
       })))
+
+      // Upload any pending documents
+      for (const { file, docType } of pendingDocs) {
+        const fd = new FormData()
+        fd.append('file', file)
+        fd.append('order_id', order.id)
+        fd.append('document_type', docType)
+        await fetch('/api/documents/upload', { method: 'POST', body: fd })
+      }
 
       if (!asDraft) {
         fetch('/api/notifications', { method: 'POST', headers: { 'Content-Type': 'application/json' },
@@ -318,6 +337,54 @@ export default function NewOutboundOrderPage() {
               )
             })}
           </div>
+        </div>
+
+        {/* Documents */}
+        <div className="card p-5">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2">
+              <FileText size={15} className="text-gray-500" />
+              <h2 className="text-sm font-semibold text-gray-700">Documents</h2>
+              {pendingDocs.length > 0 && (
+                <span className="text-xs text-gray-400">({pendingDocs.length})</span>
+              )}
+            </div>
+            <div className="flex items-center gap-2">
+              <select value={pendingDocType} onChange={e => setPendingDocType(e.target.value)}
+                className="text-xs border border-gray-300 rounded-md px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-blue-500">
+                {DOC_TYPES.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
+              </select>
+              <label className="btn-secondary text-xs py-1.5 flex items-center gap-1.5 cursor-pointer">
+                <Upload size={13} /> Add file
+                <input type="file" className="hidden"
+                  accept=".pdf,.xlsx,.xls,.csv,.jpg,.jpeg,.png,.webp"
+                  onChange={e => {
+                    const file = e.target.files?.[0]
+                    if (file) setPendingDocs(prev => [...prev, { file, docType: pendingDocType }])
+                    e.target.value = ''
+                  }} />
+              </label>
+            </div>
+          </div>
+          {pendingDocs.length === 0 ? (
+            <p className="text-xs text-gray-400 text-center py-4">No documents added yet</p>
+          ) : (
+            <div className="space-y-1">
+              {pendingDocs.map((d, i) => (
+                <div key={i} className="flex items-center justify-between px-3 py-2 bg-gray-50 rounded-md">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <FileText size={13} className="text-gray-400 shrink-0" />
+                    <span className="text-sm text-gray-700 truncate">{d.file.name}</span>
+                    <span className="text-xs text-gray-400 shrink-0">{DOC_TYPES.find(t => t.value === d.docType)?.label}</span>
+                  </div>
+                  <button type="button" onClick={() => setPendingDocs(prev => prev.filter((_, idx) => idx !== i))}
+                    className="text-gray-400 hover:text-red-500 p-1 shrink-0">
+                    <Trash2 size={13} />
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
 
         {error && <p className="text-sm text-red-600 bg-red-50 px-4 py-2 rounded-md">{error}</p>}
