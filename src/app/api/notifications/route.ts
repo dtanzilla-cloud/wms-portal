@@ -127,42 +127,42 @@ export async function POST(req: NextRequest) {
 
       // ── Inbound ───────────────────────────────────────────────────────────
       if (type === 'inbound_submitted') {
-        staffEmails.forEach(e => sends.push(sendInboundSubmitted(e, orderNumber, customerName, orderDetails)))
-        customerEmails.forEach(e => sends.push(sendInboundSubmittedCustomer(e, orderNumber, customerName, orderDetails)))
+        if (staffEmails.length)    sends.push(sendInboundSubmitted(staffEmails, orderNumber, customerName, orderDetails))
+        if (customerEmails.length) sends.push(sendInboundSubmittedCustomer(customerEmails, orderNumber, customerName, orderDetails))
       }
       if (type === 'inbound_received') {
-        customerEmails.forEach(e => sends.push(sendInboundReceived(e, orderNumber, '', orderDetails)))
-        staffEmails.forEach(e => sends.push(sendInboundReceived(e, orderNumber, customerName, orderDetails)))
+        if (staffEmails.length)    sends.push(sendInboundReceived(staffEmails, orderNumber, customerName, orderDetails))
+        if (customerEmails.length) sends.push(sendInboundReceived(customerEmails, orderNumber, '', orderDetails))
       }
       if (type === 'inbound_put_away') {
-        customerEmails.forEach(e => sends.push(sendInboundPutAway(e, orderNumber, '', orderDetails)))
-        staffEmails.forEach(e => sends.push(sendInboundPutAway(e, orderNumber, customerName, orderDetails)))
+        if (staffEmails.length)    sends.push(sendInboundPutAway(staffEmails, orderNumber, customerName, orderDetails))
+        if (customerEmails.length) sends.push(sendInboundPutAway(customerEmails, orderNumber, '', orderDetails))
       }
 
       // ── Outbound ──────────────────────────────────────────────────────────
       if (type === 'outbound_submitted') {
-        staffEmails.forEach(e => sends.push(sendOutboundSubmitted(e, orderNumber, customerName, orderDetails)))
-        customerEmails.forEach(e => sends.push(sendOutboundSubmitted(e, orderNumber, undefined, orderDetails)))
+        if (staffEmails.length)    sends.push(sendOutboundSubmitted(staffEmails, orderNumber, customerName, orderDetails))
+        if (customerEmails.length) sends.push(sendOutboundSubmitted(customerEmails, orderNumber, undefined, orderDetails))
         if (consigneeEmail) sends.push(sendConsigneeOrderConfirmation(consigneeEmail, orderNumber, consigneeName, orderDetails, trackUrl, replyTo))
       }
       if (type === 'outbound_packed') {
-        staffEmails.forEach(e => sends.push(sendOutboundPacked(e, orderNumber, customerName, orderDetails)))
-        customerEmails.forEach(e => sends.push(sendOutboundPacked(e, orderNumber, undefined, orderDetails)))
+        if (staffEmails.length)    sends.push(sendOutboundPacked(staffEmails, orderNumber, customerName, orderDetails))
+        if (customerEmails.length) sends.push(sendOutboundPacked(customerEmails, orderNumber, undefined, orderDetails))
         if (consigneeEmail) sends.push(sendConsigneeOrderUpdated(consigneeEmail, orderNumber, consigneeName, 'packed', orderDetails, trackUrl, replyTo))
       }
       if (type === 'outbound_shipped') {
-        staffEmails.forEach(e => sends.push(sendOutboundShipped(e, orderNumber, order.tracking_number ?? undefined, customerName, orderDetails)))
-        customerEmails.forEach(e => sends.push(sendOutboundShipped(e, orderNumber, order.tracking_number ?? undefined, undefined, orderDetails)))
+        if (staffEmails.length)    sends.push(sendOutboundShipped(staffEmails, orderNumber, order.tracking_number ?? undefined, customerName, orderDetails))
+        if (customerEmails.length) sends.push(sendOutboundShipped(customerEmails, orderNumber, order.tracking_number ?? undefined, undefined, orderDetails))
         if (consigneeEmail) sends.push(sendConsigneeOrderShipped(consigneeEmail, orderNumber, consigneeName, orderDetails, trackUrl, replyTo))
       }
       if (type === 'order_updated') {
-        staffEmails.forEach(e => sends.push(sendOrderUpdated(e, orderNumber, order.order_type, customerName, orderDetails)))
-        customerEmails.forEach(e => sends.push(sendOrderUpdated(e, orderNumber, order.order_type, undefined, orderDetails)))
+        if (staffEmails.length)    sends.push(sendOrderUpdated(staffEmails, orderNumber, order.order_type, customerName, orderDetails))
+        if (customerEmails.length) sends.push(sendOrderUpdated(customerEmails, orderNumber, order.order_type, undefined, orderDetails))
         if (consigneeEmail && order.order_type === 'outbound') sends.push(sendConsigneeOrderUpdated(consigneeEmail, orderNumber, consigneeName, 'updated', orderDetails, trackUrl, replyTo))
       }
       if (type === 'order_cancelled') {
-        staffEmails.forEach(e => sends.push(sendOrderCancelled(e, orderNumber, order.order_type, customerName)))
-        customerEmails.forEach(e => sends.push(sendOrderCancelled(e, orderNumber, order.order_type)))
+        if (staffEmails.length)    sends.push(sendOrderCancelled(staffEmails, orderNumber, order.order_type, customerName))
+        if (customerEmails.length) sends.push(sendOrderCancelled(customerEmails, orderNumber, order.order_type))
         if (consigneeEmail && order.order_type === 'outbound') sends.push(sendConsigneeOrderUpdated(consigneeEmail, orderNumber, consigneeName, 'cancelled', orderDetails, trackUrl, replyTo))
       }
 

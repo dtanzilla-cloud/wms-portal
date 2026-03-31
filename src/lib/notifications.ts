@@ -267,7 +267,7 @@ function consigneeLayout(title: string, body: string, trackUrl: string) {
 
 // ── Inbound ──────────────────────────────────────────────────────────────────
 
-export async function sendInboundSubmitted(to: string, orderNumber: string, customerName: string, details?: OrderDetails) {
+export async function sendInboundSubmitted(to: string | string[], orderNumber: string, customerName: string, details?: OrderDetails) {
   await dispatchEmail({
     from: FROM, to,
     subject: inboundSubj(orderNumber, customerName, 'Submitted', details?.items),
@@ -278,7 +278,7 @@ export async function sendInboundSubmitted(to: string, orderNumber: string, cust
   })
 }
 
-export async function sendInboundSubmittedCustomer(to: string, orderNumber: string, customerName: string, details?: OrderDetails) {
+export async function sendInboundSubmittedCustomer(to: string | string[], orderNumber: string, customerName: string, details?: OrderDetails) {
   await dispatchEmail({
     from: FROM, to,
     subject: inboundSubj(orderNumber, customerName, 'Submitted', details?.items),
@@ -289,7 +289,7 @@ export async function sendInboundSubmittedCustomer(to: string, orderNumber: stri
   })
 }
 
-export async function sendInboundReceived(to: string, orderNumber: string, customerName: string, details?: OrderDetails) {
+export async function sendInboundReceived(to: string | string[], orderNumber: string, customerName: string, details?: OrderDetails) {
   const isStaff = !!(customerName && details?.customerName !== customerName)
   const custLabel = details?.customerName ?? customerName
   await dispatchEmail({
@@ -303,7 +303,7 @@ export async function sendInboundReceived(to: string, orderNumber: string, custo
   })
 }
 
-export async function sendInboundPutAway(to: string, orderNumber: string, customerName: string, details?: OrderDetails) {
+export async function sendInboundPutAway(to: string | string[], orderNumber: string, customerName: string, details?: OrderDetails) {
   const custLabel = details?.customerName ?? customerName
   await dispatchEmail({
     from: FROM, to,
@@ -318,7 +318,7 @@ export async function sendInboundPutAway(to: string, orderNumber: string, custom
 
 // ── Outbound ─────────────────────────────────────────────────────────────────
 
-export async function sendOutboundSubmitted(to: string, orderNumber: string, customerName?: string, details?: OrderDetails) {
+export async function sendOutboundSubmitted(to: string | string[], orderNumber: string, customerName?: string, details?: OrderDetails) {
   const isStaff = !!customerName
   const intro = isStaff
     ? p(`Customer <strong>${customerName}</strong> has submitted outbound order <strong>${orderNumber}</strong> and is awaiting fulfillment.`)
@@ -331,7 +331,7 @@ export async function sendOutboundSubmitted(to: string, orderNumber: string, cus
   })
 }
 
-export async function sendOutboundPicked(to: string, orderNumber: string, customerName?: string, details?: OrderDetails) {
+export async function sendOutboundPicked(to: string | string[], orderNumber: string, customerName?: string, details?: OrderDetails) {
   const isStaff = !!customerName
   const intro = isStaff
     ? p(`Outbound order <strong>${orderNumber}</strong> for <strong>${customerName}</strong> has been picked.`)
@@ -344,7 +344,7 @@ export async function sendOutboundPicked(to: string, orderNumber: string, custom
   })
 }
 
-export async function sendOutboundPacked(to: string, orderNumber: string, customerName?: string, details?: OrderDetails) {
+export async function sendOutboundPacked(to: string | string[], orderNumber: string, customerName?: string, details?: OrderDetails) {
   const isStaff = !!customerName
   const intro = isStaff
     ? p(`Outbound order <strong>${orderNumber}</strong> for <strong>${customerName}</strong> has been packed and is ready to ship.`)
@@ -357,7 +357,7 @@ export async function sendOutboundPacked(to: string, orderNumber: string, custom
   })
 }
 
-export async function sendOutboundShipped(to: string, orderNumber: string, tracking?: string, customerName?: string, details?: OrderDetails) {
+export async function sendOutboundShipped(to: string | string[], orderNumber: string, tracking?: string, customerName?: string, details?: OrderDetails) {
   const isStaff = !!customerName
   const intro = isStaff
     ? p(`Outbound order <strong>${orderNumber}</strong> for <strong>${customerName}</strong> has been dispatched.`)
@@ -376,7 +376,7 @@ export async function sendOutboundShipped(to: string, orderNumber: string, track
 
 // ── Order updated / cancelled ─────────────────────────────────────────────────
 
-export async function sendOrderUpdated(to: string, orderNumber: string, orderType: string, customerName?: string, details?: OrderDetails) {
+export async function sendOrderUpdated(to: string | string[], orderNumber: string, orderType: string, customerName?: string, details?: OrderDetails) {
   const isStaff = !!customerName
   const typeLabel = orderType === 'inbound' ? 'inbound' : 'outbound'
   const intro = isStaff
@@ -392,7 +392,7 @@ export async function sendOrderUpdated(to: string, orderNumber: string, orderTyp
   })
 }
 
-export async function sendOrderCancelled(to: string, orderNumber: string, orderType: string, customerName?: string) {
+export async function sendOrderCancelled(to: string | string[], orderNumber: string, orderType: string, customerName?: string) {
   const isStaff = !!customerName
   const typeLabel = orderType === 'inbound' ? 'inbound' : 'outbound'
   await dispatchEmail({
