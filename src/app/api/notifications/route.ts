@@ -17,12 +17,6 @@ import {
 } from '@/lib/notifications'
 
 export async function POST(req: NextRequest) {
-  // Set DISABLE_EMAILS=true in environment to suppress all outgoing emails
-  // (useful during development / bug fixing). Remove or set to false to re-enable.
-  if (process.env.DISABLE_EMAILS === 'true') {
-    return NextResponse.json({ success: true, emailsDisabled: true })
-  }
-
   try {
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()

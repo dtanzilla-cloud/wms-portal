@@ -25,28 +25,7 @@ function getFrom() {
 const FROM = getFrom()
 const APP_URL = getAppUrl()
 
-/**
- * Single send wrapper — enforces two optional env-var controls:
- *
- *   DISABLE_EMAILS=true          → drop every email silently
- *   EMAIL_ALLOWLIST=a@x.com,b@y.com → only deliver to listed addresses;
- *                                     all others are skipped (good for
- *                                     testing without spamming real users)
- *
- * Leave both unset for normal production behaviour.
- */
 async function dispatchEmail(params: Parameters<ReturnType<typeof getResend>['emails']['send']>[0]) {
-  if (process.env.DISABLE_EMAILS === 'true') return
-
-  const rawAllowlist = process.env.EMAIL_ALLOWLIST ?? ''
-  if (rawAllowlist.trim()) {
-    const allowed = rawAllowlist.split(',').map(e => e.trim().toLowerCase())
-    const recipients = Array.isArray(params.to) ? params.to : [params.to]
-    const permitted = recipients.filter(r => allowed.includes((r as string).toLowerCase()))
-    if (permitted.length === 0) return          // nobody in this send is allowed
-    params = { ...params, to: permitted.length === 1 ? permitted[0] : permitted }
-  }
-
   return getResend().emails.send(params)
 }
 
