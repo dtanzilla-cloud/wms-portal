@@ -3,7 +3,7 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import {
   LayoutDashboard, Package, ArrowDownCircle, ArrowUpCircle,
-  FileText, Users, History, Settings, Building2
+  FileText, Users, History, Settings, Building2, Truck
 } from 'lucide-react'
 import type { Profile, Customer } from '@/types'
 import SignOutButton from './SignOutButton'
@@ -31,6 +31,7 @@ const staffNav = [
   { href: '/orders/outbound',     label: 'Outbound Queue',    icon: ArrowUpCircle },
   { href: '/inventory/history',   label: 'Stock History',     icon: History },
   { href: '/consignees',          label: 'Consignees',        icon: Building2 },
+  { href: '/carriers',            label: 'Carriers',          icon: Truck },
   { href: '/documents',           label: 'Documents',         icon: FileText },
   { href: '/settings',            label: 'Settings',          icon: Settings },
 ]

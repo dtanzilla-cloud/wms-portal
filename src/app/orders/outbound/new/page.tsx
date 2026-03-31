@@ -8,6 +8,7 @@ import { ArrowLeft, Plus, Trash2 } from 'lucide-react'
 interface SKUOption { id: string; sku_code: string; description: string; unit: string; quantity_available: number }
 interface ConsigneeOption { id: string; company_name: string; consignee_addresses: any[] }
 interface ItemRow { sku_id: string; quantity: number; lot_number: string }
+interface CarrierOption { id: string; name: string }
 
 const REF_TYPES = [
   { value: '', label: 'None' },
@@ -22,6 +23,7 @@ export default function NewOutboundOrderPage() {
   const [customers, setCustomers] = useState<any[]>([])
   const [skus, setSkus] = useState<SKUOption[]>([])
   const [consignees, setConsignees] = useState<ConsigneeOption[]>([])
+  const [carrierOptions, setCarrierOptions] = useState<CarrierOption[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [profile, setProfile] = useState<any>(null)
@@ -53,6 +55,8 @@ export default function NewOutboundOrderPage() {
         const { data: custs } = await supabase.from('customers').select('id, name').eq('status', 'active').order('name')
         setCustomers(custs ?? [])
       }
+      const { data: carriers } = await supabase.from('carriers').select('id, name').order('name')
+      setCarrierOptions(carriers ?? [])
     }
     load()
   }, [])
@@ -209,9 +213,12 @@ export default function NewOutboundOrderPage() {
             </div>
             <div>
               <label className="block text-xs font-medium text-gray-600 mb-1">Carrier</label>
-              <input type="text" value={carrier} onChange={e => setCarrier(e.target.value)}
-                placeholder="e.g. FedEx, DHL"
+              <input type="text" list="carrier-options" value={carrier} onChange={e => setCarrier(e.target.value)}
+                placeholder="Select or type carrier"
                 className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+              <datalist id="carrier-options">
+                {carrierOptions.map(c => <option key={c.id} value={c.name} />)}
+              </datalist>
             </div>
             <div className="col-span-2">
               <label className="block text-xs font-medium text-gray-600 mb-1">Pallet dimensions</label>
