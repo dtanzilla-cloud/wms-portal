@@ -1,10 +1,9 @@
 import { createClient } from '@/lib/supabase/server'
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
-import { ArrowLeft, ArrowUpCircle, Package, MapPin, FileText, CheckCircle, Pencil } from 'lucide-react'
+import { ArrowLeft, ArrowUpCircle, Package, MapPin, CheckCircle, Pencil } from 'lucide-react'
 import OrderStatusActions from '@/components/orders/OrderStatusActions'
 import DocumentUpload from '@/components/documents/DocumentUpload'
-import GeneratePDFButtons from '@/components/documents/GeneratePDFButtons'
 import OrderPhotos from '@/components/orders/OrderPhotos'
 import CancelOrderButton from '@/components/orders/CancelOrderButton'
 import { revalidatePath } from 'next/cache'
@@ -117,23 +116,7 @@ export default async function OutboundOrderDetailPage({ params }: { params: { id
             </table>
           </div>
 
-          {/* Generate documents — only once packed or shipped */}
-          {['packed', 'shipped'].includes(order.status) && (
-            <div className="card">
-              <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <FileText size={15} className="text-gray-500" />
-                  <h2 className="text-sm font-semibold text-gray-700">Generate documents</h2>
-                </div>
-                <GeneratePDFButtons orderId={order.id} />
-              </div>
-            </div>
-          )}
-
-          {/* Upload documents — available on draft */}
-          {order.status === 'draft' && (
-            <DocumentUpload orderId={order.id} documents={order.documents ?? []} />
-          )}
+          <DocumentUpload orderId={order.id} documents={order.documents ?? []} />
 
           {/* Photos */}
           <OrderPhotos orderId={order.id} />
