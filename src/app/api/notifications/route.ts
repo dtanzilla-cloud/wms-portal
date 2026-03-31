@@ -88,17 +88,17 @@ export async function POST(req: NextRequest) {
       const fallbackStaff = process.env.STAFF_NOTIFICATION_EMAIL || process.env.NEXT_PUBLIC_STAFF_EMAIL
       const staffEmails = adminEmails.length > 0 ? adminEmails : fallbackStaff ? [fallbackStaff] : []
 
-      // Customer emails — prefer portal accounts linked to this customer;
-      // fall back to the customer's billing_email if no profiles are linked yet.
+      // Customer emails — always include billing_email plus any portal accounts
+      // linked to this customer so no recipient is missed.
       const { data: customerProfiles } = await supabase
         .from('profiles')
         .select('email')
         .eq('customer_id', order.customer_id)
       const billingEmail: string | undefined = (order.customers as any)?.billing_email ?? undefined
       const profileEmails = (customerProfiles ?? []).map((p: any) => p.email).filter(Boolean)
-      const customerEmails: string[] = profileEmails.length > 0
-        ? profileEmails
-        : billingEmail ? [billingEmail] : []
+      const customerEmails: string[] = [
+        ...new Set([...profileEmails, ...(billingEmail ? [billingEmail] : [])]),
+      ]
       const customerName = order.customers?.name ?? ''
       const orderNumber = order.order_number
 
@@ -161,7 +161,7 @@ export async function POST(req: NextRequest) {
 
       const results = await Promise.allSettled(sends)
       const debug = {
-        type, order_id, orderNumber, staffEmails, customerEmails, consigneeEmail,
+        type, order_id, orderNumber, staffEmails, customerEmails, allEmails, consigneeEmail,
         sendsQueued: sends.length,
         results: results.map((r, i) =>
           r.status === 'fulfilled'
