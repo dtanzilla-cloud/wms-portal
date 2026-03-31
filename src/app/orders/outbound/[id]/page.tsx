@@ -117,17 +117,23 @@ export default async function OutboundOrderDetailPage({ params }: { params: { id
             </table>
           </div>
 
-          {/* Documents */}
-          <div className="card">
-            <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <FileText size={15} className="text-gray-500" />
-                <h2 className="text-sm font-semibold text-gray-700">Generate documents</h2>
+          {/* Generate documents — only once packed or shipped */}
+          {['packed', 'shipped'].includes(order.status) && (
+            <div className="card">
+              <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <FileText size={15} className="text-gray-500" />
+                  <h2 className="text-sm font-semibold text-gray-700">Generate documents</h2>
+                </div>
+                <GeneratePDFButtons orderId={order.id} />
               </div>
-              <GeneratePDFButtons orderId={order.id} />
             </div>
-          </div>
-          <DocumentUpload orderId={order.id} documents={order.documents ?? []} />
+          )}
+
+          {/* Upload documents — available on draft */}
+          {order.status === 'draft' && (
+            <DocumentUpload orderId={order.id} documents={order.documents ?? []} />
+          )}
 
           {/* Photos */}
           <OrderPhotos orderId={order.id} />
