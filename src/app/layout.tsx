@@ -1,8 +1,8 @@
-import type { Metadata } from 'next'
+﻿import type { Metadata } from 'next'
 import './globals.css'
 
 export const metadata: Metadata = {
-  title: 'CTS Portal',
+  title: 'In N Out',
   description: 'Warehouse Management System',
 }
 

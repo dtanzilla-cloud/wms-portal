@@ -1,4 +1,4 @@
-import { Resend } from 'resend'
+﻿import { Resend } from 'resend'
 
 // Lazy initialisation — avoids "Missing API key" crash during Next.js build
 // when env vars are not yet available.
@@ -14,9 +14,9 @@ function getFrom() {
   if (process.env.RESEND_FROM_EMAIL) return process.env.RESEND_FROM_EMAIL
   try {
     const host = new URL(getAppUrl().startsWith('http') ? getAppUrl() : `https://${getAppUrl()}`).hostname
-    return `CTS Portal <noreply@${host}>`
+    return `In N Out <noreply@${host}>`
   } catch {
-    return `CTS Portal <noreply@yourdomain.com>`
+    return `In N Out <noreply@yourdomain.com>`
   }
 }
 
@@ -218,13 +218,13 @@ function baseLayout(title: string, body: string) {
   return `<!DOCTYPE html><html><body style="margin:0;padding:0;background:#f8fafc;font-family:Inter,system-ui,sans-serif">
 <div style="max-width:600px;margin:40px auto;background:#fff;border:1px solid #e2e8f0;border-radius:8px;overflow:hidden">
   <div style="background:#1d4ed8;padding:20px 28px">
-    <span style="color:#fff;font-size:16px;font-weight:600">CTS Portal</span>
+    <span style="color:#fff;font-size:16px;font-weight:600">In N Out</span>
   </div>
   <div style="padding:28px">
     <h2 style="margin:0 0 12px;font-size:18px;color:#1e293b">${title}</h2>
     ${body}
     <div style="margin-top:28px;padding-top:16px;border-top:1px solid #f1f5f9;font-size:12px;color:#94a3b8">
-      CTS Portal · <a href="${APP_URL}" style="color:#3b82f6">Go to portal</a>
+      In N Out · <a href="${APP_URL}" style="color:#3b82f6">Go to portal</a>
     </div>
   </div>
 </div>
@@ -235,7 +235,7 @@ function consigneeLayout(title: string, body: string, trackUrl: string) {
   return `<!DOCTYPE html><html><body style="margin:0;padding:0;background:#f8fafc;font-family:Inter,system-ui,sans-serif">
 <div style="max-width:600px;margin:40px auto;background:#fff;border:1px solid #e2e8f0;border-radius:8px;overflow:hidden">
   <div style="background:#1d4ed8;padding:20px 28px">
-    <span style="color:#fff;font-size:16px;font-weight:600">CTS Portal</span>
+    <span style="color:#fff;font-size:16px;font-weight:600">In N Out</span>
   </div>
   <div style="padding:28px">
     <h2 style="margin:0 0 12px;font-size:18px;color:#1e293b">${title}</h2>
@@ -474,9 +474,9 @@ export async function sendDocumentUploaded(to: string, orderNumber: string, file
 export async function sendTrialReminder(to: string, name: string, daysLeft: number) {
   await dispatchEmail({
     from: FROM, to,
-    subject: `Your CTS Portal trial expires in ${daysLeft} day${daysLeft !== 1 ? 's' : ''}`,
+    subject: `Your In N Out trial expires in ${daysLeft} day${daysLeft !== 1 ? 's' : ''}`,
     html: baseLayout('Your trial is ending soon',
-      `${p(`Hi ${name}, your CTS Portal trial expires in <strong>${daysLeft} day${daysLeft !== 1 ? 's' : ''}</strong>. Contact us to continue using the platform.`)}
+      `${p(`Hi ${name}, your In N Out trial expires in <strong>${daysLeft} day${daysLeft !== 1 ? 's' : ''}</strong>. Contact us to continue using the platform.`)}
       ${btn('Go to portal', APP_URL)}`)
   })
 }
