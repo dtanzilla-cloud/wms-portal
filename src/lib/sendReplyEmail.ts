@@ -1,4 +1,4 @@
-﻿import { Resend } from 'resend'
+import { Resend } from 'resend'
 import { createAdminClient } from '@/lib/supabase/server'
 
 let _resend: Resend | null = null
@@ -35,7 +35,7 @@ async function getFromAddress(): Promise<string> {
   } catch {
     // fall through to env fallback
   }
-  return process.env.RESEND_FROM_EMAIL ?? 'In N Out <noreply@yourdomain.com>'
+  return process.env.RESEND_FROM_EMAIL ?? 'CTS Portal <noreply@yourdomain.com>'
 }
 
 async function resolveSkuName(skuId: string): Promise<string> {

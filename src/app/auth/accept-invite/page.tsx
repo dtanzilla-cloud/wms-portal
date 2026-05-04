@@ -1,4 +1,4 @@
-﻿'use client'
+'use client'
 import { Suspense, useEffect, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
@@ -62,7 +62,7 @@ function AcceptInviteContent() {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
         <div className="w-full max-w-sm text-center">
-          <h1 className="text-2xl font-semibold text-blue-700 mb-4">In N Out</h1>
+          <h1 className="text-2xl font-semibold text-blue-700 mb-4">CTS Portal</h1>
           <div className="card p-6">
             <p className="text-sm text-red-600 bg-red-50 px-3 py-2 rounded mb-4">
               {error || 'This invitation link is invalid or has expired.'}
@@ -78,7 +78,7 @@ function AcceptInviteContent() {
     <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
       <div className="w-full max-w-sm">
         <div className="text-center mb-8">
-          <h1 className="text-2xl font-semibold text-blue-700">In N Out</h1>
+          <h1 className="text-2xl font-semibold text-blue-700">CTS Portal</h1>
           <p className="text-sm text-gray-500 mt-1">
             Set up your account{consigneeName ? ` for ${consigneeName}` : ''}
           </p>

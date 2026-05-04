@@ -1,4 +1,4 @@
-﻿'use client'
+'use client'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import {
@@ -52,7 +52,7 @@ export default function Sidebar({ profile, customer }: SidebarProps) {
     <aside className="w-60 min-h-screen bg-white border-r border-gray-200 flex flex-col shadow-lg md:shadow-none">
       {/* Logo */}
       <div className="px-5 py-4 border-b border-gray-200">
-        <span className="text-lg font-semibold text-blue-700 tracking-tight">In N Out</span>
+        <span className="text-lg font-semibold text-blue-700 tracking-tight">CTS Portal</span>
       </div>
 
       {/* Customer context (staff view) */}
