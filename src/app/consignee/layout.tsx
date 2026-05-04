@@ -24,7 +24,7 @@ export default async function ConsigneeLayout({ children }: { children: React.Re
       {/* Sidebar */}
       <aside className="w-56 min-h-screen bg-white border-r border-gray-200 flex flex-col">
         <div className="px-5 py-4 border-b border-gray-200">
-          <span className="text-base font-semibold text-blue-700">CTS Portal</span>
+          <span className="text-base font-semibold text-blue-700">{process.env.NEXT_PUBLIC_SITE_NAME ?? 'CTS Portal'}</span>
           <p className="text-xs text-gray-500 mt-0.5 truncate">{companyName}</p>
         </div>
         <nav className="flex-1 px-3 py-4 space-y-0.5">
