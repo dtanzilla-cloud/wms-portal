@@ -298,8 +298,8 @@ export default async function ChargesPage({
       .order('created_at', { ascending: false }),
   ])
 
-  const historical = (historicalRaw ?? []) as RawMovement[]
-  const monthMovements = (monthRaw ?? []) as RawMovement[]
+  const historical = (historicalRaw ?? []) as unknown as RawMovement[]
+  const monthMovements = (monthRaw ?? []) as unknown as RawMovement[]
   const allMovements = [...historical, ...monthMovements]
 
   const storageRate = Number(rates?.storage_rate_per_unit_per_week ?? 0)
