@@ -61,8 +61,15 @@ function balanceAt(movements: RawMovement[], date: Date): number {
   let balance = 0
   for (const m of movements) {
     if (new Date(m.moved_at) <= cutoff) {
-      if (m.movement_type === 'inbound') balance += m.handling_units ?? 0
-      else if (m.movement_type === 'outbound') balance -= m.handling_units ?? 0
+      if (m.movement_type === 'inbound') {
+        balance += m.handling_units ?? 0
+      } else if (m.movement_type === 'outbound') {
+        balance -= m.handling_units ?? 0
+      } else if (m.movement_type === 'adjustment') {
+        // quantity is signed (negative = stock removed); use it to determine direction
+        const sign = (m.quantity ?? 0) >= 0 ? 1 : -1
+        balance += sign * (m.handling_units ?? 0)
+      }
     }
   }
   return Math.max(0, balance)
@@ -265,12 +272,11 @@ export default async function ChargesPage({
     { data: rates },
     { data: invoices },
   ] = await Promise.all([
-    // All inbound/outbound movements BEFORE this month — needed for running balance
+    // All movements BEFORE this month — needed for running balance (include adjustments)
     supabase
       .from('inventory_movements')
       .select('id, movement_type, handling_units, moved_at, quantity, skus(sku_code, description)')
       .eq('customer_id', customerId)
-      .in('movement_type', ['inbound', 'outbound'])
       .lt('moved_at', monthStart.toISOString()),
 
     // Movements within the billing month
